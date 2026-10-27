@@ -1,20 +1,26 @@
-% 实验名称：CI-Higuchi 分形维数五类舰船声音分类
+% 实验名称：CI-Higuchi 分形维数八类舰船声音分类
 % 分形维数算法：置信区间改进 Higuchi（CI-Higuchi）
 clear; clc; close all;
 
-%% 1. 载入五类舰船声音
+%% 1. 载入八类舰船声音
 project_path = fileparts(mfilename('fullpath'));
 audio_dirs = { ...
     fullfile(project_path, '音频', '国家渡轮'), ...
     fullfile(project_path, '音频', '货轮'), ...
     fullfile(project_path, '音频', '螺旋桨呜呜呜'), ...
     fullfile(project_path, '音频', '舷外发动机发出呜呜声和加速'), ...
-    fullfile(project_path, '音频', '游轮')};
-num_classes = 5;
+    fullfile(project_path, '音频', '游轮'), ...
+    fullfile(project_path, '音频', '舷外发动机（60马力）在10节'), ...
+    fullfile(project_path, '音频', '舷外发动机（60马力）在20节'), ...
+    fullfile(project_path, '音频', '由小型柴油发动机驱动的过往船只的水下记录')};
+num_classes = 8;
 wav_paths = cell(1, num_classes);
-for i = 1:num_classes
+for i = 1:5
     wav_paths{i} = FindSupportedAudioFile(audio_dirs{i});
 end
+wav_paths{6} = fullfile(audio_dirs{6}, '705da20f-b986-4e49-ae58-39f9f286e9ad.mp3');
+wav_paths{7} = fullfile(audio_dirs{7}, '39f7562b-1d7a-4fe4-a969-6be98e7d4886.mp3');
+wav_paths{8} = fullfile(audio_dirs{8}, 'cb678cb6-5627-4544-9fbb-c8e3884f0827.mp3');
 x_all = cell(1, num_classes);
 for i = 1:num_classes
     if exist(wav_paths{i}, 'file') ~= 2
@@ -34,9 +40,12 @@ x2 = x_all{2};       % 货轮
 x3 = x_all{3};       % 螺旋桨呜呜呜
 x4 = x_all{4};       % 舷外发动机发出呜呜声和加速
 x5 = x_all{5};       % 游轮
+x6 = x_all{6};       % 舷外发动机60马力10节
+x7 = x_all{7};       % 舷外发动机60马力20节
+x8 = x_all{8};       % 小型柴油发动机船只
 
 
-%% 2. 计算五类 CI-Higuchi 特征
+%% 2. 计算八类 CI-Higuchi 特征
 kmax = 20;          % 常用尺度
 alpha = 0.95;       % 95% 置信区间
 scales = 1:10;
@@ -44,7 +53,7 @@ num_scales = length(scales);
 
 features = zeros(num_classes * 200, num_scales);
 labels = zeros(num_classes * 200, 1);
-x_all = {x1, x2, x3, x4, x5};
+x_all = {x1, x2, x3, x4, x5, x6, x7, x8};
 for c = 1:num_classes
     for i = 1:200
         idx = (i-1) * 2048 + (1:2048);
@@ -81,9 +90,9 @@ for c = 1:num_classes
     train_idx(idx) = true;
 end
 
-X_train = features(train_idx);
+X_train = features(train_idx, :);
 Y_train = labels(train_idx);
-X_test = features(~train_idx);
+X_test = features(~train_idx, :);
 Y_test = labels(~train_idx);
 
 model = fitcknn(X_train, Y_train, ...
@@ -93,7 +102,8 @@ model = fitcknn(X_train, Y_train, ...
 Y_pred = predict(model, X_test);
 
 %% 4. 输出结果
-class_names = {'国家渡轮', '货轮', '螺旋桨呜呜呜', '舷外发动机发出呜呜声和加速', '游轮'};
+class_names = {'国家渡轮', '货轮', '螺旋桨呜呜呜', '舷外发动机发出呜呜声和加速', ...
+    '游轮', '舷外发动机60马力10节', '舷外发动机60马力20节', '小型柴油发动机船只'};
 for c = 1:num_classes
     rate = mean(Y_pred(Y_test == c) == c) * 100;
     fprintf('%s 识别率 = %.2f%%\n', class_names{c}, rate);
