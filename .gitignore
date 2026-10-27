@@ -1,0 +1,38 @@
+# Raw/third-party audio datasets and downloaded archives
+/DeepShip-main/
+/v2/音频/
+*.wav
+*.flac
+*.mp3
+*.zip
+
+# Local data, results, and MATLAB temporary artifacts
+*.mat
+*.asv
+*.mex*
+*.fig
+*.csv
+*.xlsx
+*.log
+*.tmp
+*.bak
+*.cache
+
+# Local working/reference material not needed to reproduce the code layout
+/材料/
+/backup/
+/OG/
+*.docx
+~$*
+
+# Credentials and editor/OS files
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+*.p12
+id_rsa
+id_ed25519
+.DS_Store
+Thumbs.db
