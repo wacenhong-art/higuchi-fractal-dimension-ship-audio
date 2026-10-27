@@ -17,11 +17,15 @@
 ├── Rung_kutta_JDSR_k.m         # 随机共振版本调用的 RK4 求解器
 ├── v2/
 │   ├── ci_hfd.m                # 五类、随机共振 + CI-Higuchi
-│   ├── ci_hfd_no_sr.m          # 五类、无随机共振 CI-Higuchi
+│   ├── ci_hfd_no_sr.m          # 五类、10 尺度粗粒化 CI-Higuchi
 │   ├── ci_fd_katz.m            # 五类、无随机共振 Katz
 │   ├── ci_fd_katz_sr.m         # 五类、随机共振 Katz
-│   ├── ci_fd_fx.m              # 五类、无随机共振计盒维数
+│   ├── ci_fd_fx.m              # 五类、10 尺度粗粒化计盒维数
 │   └── Rung_kutta_JDSR_k.m     # RK4 副本
+├── v3_ds/
+│   ├── ds_fx.m                 # 四类、无 SR、10 尺度 FX + 1-NN
+│   ├── ds_higuchi.m            # 四类、无 SR、10 尺度 CI-Higuchi + 1-NN
+│   └── ds_katz.m               # 四类、无 SR、10 尺度 Katz + 1-NN
 ├── 对比算法/
 │   ├── Katz_FD.m               # Katz 实现（保留文件内原作者署名）
 │   └── FX.m                    # 计盒维数实现
@@ -53,6 +57,7 @@ flowchart TD
 ```
 
 更新时间（UTC+08:00）：2026-10-27 20:34。操作：新增并运行十尺度 Petrosian 分类实验；影响文件：`v3_ds/ds_petrosian.m`、`README.md`；验证状态：`EXECUTED`。输出 `features=800×10`、训练集 `400×10`、测试集 `400×10`；Cargo、Passengership、Tanker、Tug 识别率和总体识别率均为 100.00%，混淆矩阵为 `diag([100,100,100,100])`。该新增流程未调用随机共振、RK4 或相关函数。
+
 ## 2026-10-27：10 尺度 Dubuc 分形维数四类舰船声音分类
 
 新增 `v3_ds/ds_dubuc.m`，直接调用同目录原有的 `v3_ds/Dubuc_FD.m`。原始 Dubuc variation 方法及其默认 dyadic radii 规则保持不变；主程序未重写或调整算法公式。该函数的单输入调用会按粗粒化序列长度使用其既有半径逻辑，最短尺度 10 序列为 204 点，满足其 128 点最小输入长度要求。
@@ -76,6 +81,7 @@ flowchart TD
 ```
 
 更新时间（UTC+08:00）：2026-10-27。代码变更：新增 `v3_ds/ds_dubuc.m`，README 增补实验记录与流程图；未修改 `Dubuc_FD.m` 或其他算法实验。已静态核对数据路径、四个指定音频、2048 点分段、十个外部粗粒化尺度、原函数调用、`800×10` 特征写入、10 列 KNN 输入及无随机共振调用。本机未发现 MATLAB 可执行文件，故未实际运行完整分类，也未填写识别率或混淆矩阵结果。
+
 ## 2026-10-27：新增十尺度 R/S 分形维数舰船声音分类实验
 
 新增 `v3_ds/ds_rs.m`，直接调用同目录原有 `v3_ds/RS_FD.m` 的单输入接口。该函数以非重叠窗口的 R/S（rescaled range）均值进行对数回归，先得到 Hurst 指数 `H`，再按其明确限定的自仿射图形定义返回分形维数 `D = 2-H`；本实验使用函数直接输出的 `D`，未自行转换、重写或修改其公式。默认内部窗口为从 8 到 `floor(N/4)` 的 2 的幂；最短的 204 点外部粗粒化序列使用 `[8,16,32]`，满足原函数至少三个窗口尺度的要求。
@@ -98,11 +104,7 @@ flowchart TD
     J --> K[输出识别率和混淆矩阵]
 ```
 
-更新时间（UTC+08:00）：2026-10-27。代码变更：新增 `v3_ds/ds_rs.m`，README 增补本实验说明与流程图；`RS_FD.m` 未修改。已完成静态接口、窗口兼容性、十尺度、特征矩阵、二维 KNN 索引及无随机共振调用检查。本次明确仅完成代码生成与静态检查，未运行 MATLAB、Octave、音频读取、特征计算、训练或分类，因此未记录识别率与混淆矩阵结果。
-修正（2026-10-27）：`v2/RS_FD.m` 与 `v3_ds/RS_FD.m` 已同步更新零方差块处理。R/S 对 `S=0` 的块无定义，现仅平均同一窗口尺度内 `S>0` 的有效块；若某窗口尺度全部块恒定，函数仍以 `RS_FD:NoValidBlocks` 明确报错。外部粗粒化、内部窗口尺度、R/S 回归和 `D=2-H` 均未改变；本次未运行 MATLAB 或重新计算实验结果。
-
-
-
+更新时间（UTC+08:00）：2026-10-27。代码变更：新增 `v3_ds/ds_rs.m`，并同步修订 `v3_ds/RS_FD.m` 与 `v2/RS_FD.m` 的零方差块处理：R/S 对 `S=0` 的块无定义，函数现仅平均同一窗口尺度内 `S>0` 的有效块；若该尺度没有有效块，仍明确报错。外部粗粒化、内部窗口尺度、R/S 回归、`D=2-H`、特征维度及分类设置均未改变。已完成静态接口、窗口兼容性、十尺度、特征矩阵、二维 KNN 索引及无随机共振调用检查。本次未重新运行 MATLAB、Octave、音频读取、特征计算、训练或分类，因此未记录新的识别率与混淆矩阵结果。
 
 未纳入公开版本控制的本地目录包括 `DeepShip-main/`、`v2/音频/`、`backup/`、`OG/` 和 `材料/`。其中前两者含原始或本地音频；`backup/` 与 `OG/` 是历史副本，不是正式入口或独立实验版本。
 
@@ -126,12 +128,16 @@ flowchart TD
     ALG -->|CI-Higuchi + SR| SR[RK4: Rung_kutta_JDSR_k(a,b,h,x)]
     SR --> Z[按均值和标准差标准化]
     Z --> CI[CI_Higuchi<br/>kmax=20, alpha=0.95]
-    ALG -->|CI-Higuchi 无 SR| CI0[CI_Higuchi<br/>直接使用原始片段]
+    ALG -->|v2 CI-Higuchi 多尺度| CGH[每个片段独立作 tau=1:10<br/>非重叠均值粗粒化]
+    CGH --> HLEN[长度 2048, 1024, 682, 512, 409,<br/>341, 292, 256, 227, 204]
+    HLEN --> CI0[每尺度 CI_Higuchi<br/>kmax=20, alpha=0.95]
     ALG -->|Katz + SR，仅 v2| KSR[RK4 后标准化]
     KSR --> K[Katz_FD 行向量]
     ALG -->|Katz 无 SR| K0[Katz_FD 行向量]
-    ALG -->|FX 无 SR| FX[FX 片段, cellmax=2048]
-    CI --> F[每片段一个标量特征<br/>并写入类别标签]
+    ALG -->|v2 FX 多尺度| CGF[每个片段独立作 tau=1:10<br/>非重叠均值粗粒化]
+    CGF --> FXLEN[截取不超过当前长度的<br/>最大 2 的整数次幂]
+    FXLEN --> FX[FX(x_fx, cellmax)<br/>cellmax=length(x_fx)]
+    CI --> F[原版本：每片段一个标量特征<br/>v2 多尺度：每片段 10 维特征<br/>并写入类别标签]
     CI0 --> F
     K --> F
     K0 --> F
@@ -143,22 +149,48 @@ flowchart TD
 
 分支差异完全来自当前代码：根目录含四类 CI-Higuchi（有/无随机共振）、Katz（无随机共振）和 FX（无随机共振）；`v2` 扩展为五类，并额外含 `ci_fd_katz_sr.m`。所有脚本将结果显示在 MATLAB 命令窗口和工作区；代码没有写出结果文件的语句。
 
+### v3_ds 十尺度流程 / v3_ds 10-Scale Workflow
+
+`v3_ds` 的三个脚本以其现有代码为准，处理四类音频（Cargo、Passengership、Tanker、Tug），而非五类。每类读取指定 WAV、多声道按 `mean(x,2)` 转单声道，并从前 `200 × 2048` 个采样点切出 200 个连续且不重叠的片段。对每个独立的 2048 点原始片段，直接生成 `tau=1:10` 的非重叠分组均值序列：尺度 `tau` 的长度为 `floor(2048/tau)`；尾部不足一组的点被舍弃。各尺度均从同一原始片段生成，绝不递归粗粒化、跨片段或跨类别混合。
+
+```mermaid
+flowchart TD
+    A[四类原始舰船音频] --> B[原有预处理: audioread; 多声道 mean(x,2)]
+    B --> C[原有分段: 每类前 200 个不重叠 2048 点片段]
+    C --> D[每个片段独立进行 tau=1:10 非重叠分组均值]
+    D --> E{选择一个 v3_ds 算法}
+    E --> F[FX: 10 个 FX 特征]
+    E --> G[CI-Higuchi: 10 个 HFD 特征]
+    E --> H[Katz: 10 个 Katz 特征]
+    F --> I[每片段一个 10 维特征向量]
+    G --> I
+    H --> I
+    I --> J[组装 800x10 特征矩阵和 800x1 标签]
+    J --> K[原有划分: rng(42), 每类 100 训练 / 100 测试]
+    K --> L[原有 KNN: 1 邻居, 欧氏距离]
+    L --> M[输出四类识别率、总体识别率和混淆矩阵]
+```
+
 ## 算法与参数 / Algorithms & Parameters
 
 | 项目 | 实际设置与含义 | 源代码入口 |
 |---|---|---|
-| CI-Higuchi | `kmax=20`，计算尺度 `1:20`；`alpha=0.95`，用于按 t 分布置信区间剔除正长度序列中的离群值 | `ci_hfd.m`、`ci_hfd_no_sr.m`、`v2/ci_hfd.m`、`v2/ci_hfd_no_sr.m` |
+| CI-Higuchi | `kmax=20`，计算内部尺度 `1:20`；`alpha=0.95`，用于按 t 分布置信区间剔除正长度序列中的离群值。`v2/ci_hfd_no_sr.m` 另对每个片段按外部粗粒化尺度 `tau=1:10` 提取 10 个特征；`kmax` 不是粗粒化尺度数。 | `ci_hfd.m`、`ci_hfd_no_sr.m`、`v2/ci_hfd.m`、`v2/ci_hfd_no_sr.m` |
 | 传统 Higuchi | `Traditional_Higuchi(x,kmax)` 定义在 CI-Higuchi 脚本中；当前主流程不将其写入分类特征 | 同上 |
 | 随机共振与 RK4 | `a=10`、`b=1`、`h=0.01`；RK4 迭代项为 `a*x - b*x^3 + input`，初始输出向量为零 | `ci_hfd.m`、`v2/ci_hfd.m`、`v2/ci_fd_katz_sr.m`、`Rung_kutta_JDSR_k.m` |
 | Katz | 调用前转为行向量；`Katz_FD.m` 没有生效的 `Kmax` 参数 | `ci_fd_katz.m`、`v2/ci_fd_katz*.m`、`对比算法/Katz_FD.m` |
-| 计盒维数 | `FX(x,cellmax)`，`cellmax=2048`；代码要求其不小于输入长度 | `ci_fd_fx.m`、`v2/ci_fd_fx.m`、`对比算法/FX.m` |
+| 计盒维数 | `FX(x,cellmax)` 要求 `cellmax` 不小于输入长度；其网格循环还以 `log2(cellmax)` 作为层数。`v2/ci_fd_fx.m` 因而在每个尺度的粗粒化后，截取不超过当前长度的最大 2 的整数次幂，并令 `cellmax` 等于该截取长度。尺度 1 保持原始 2048 点和 `cellmax=2048`。 | `ci_fd_fx.m`、`v2/ci_fd_fx.m`、`对比算法/FX.m` |
 | 音频预处理 | `audioread`；多声道 `mean(x,2)`；未重采样，采样率由 `~` 接收且未参与后续计算 | 所有分类脚本 |
-| 分段与特征 | 每类前 200 个连续、不重叠的 2048 点片段；每片段生成一个标量特征。根目录为 `800×1`（4×200），`v2` 为 `1000×1`（5×200） | 所有分类脚本 |
+| 分段与特征 | 每类前 200 个连续、不重叠的 2048 点片段。`v2/ci_fd_fx.m` 与 `v2/ci_hfd_no_sr.m` 对每个独立片段按 `y_tau(j)=mean(x((j-1)*tau+1:j*tau))`（`tau=1:10`）提取 10 维特征，尾部不足一个窗口的点舍弃；不跨片段平均。两者的特征矩阵均为 `1000×10`（5×200），标签仍为 `1000×1`。 | `v2/ci_fd_fx.m`、`v2/ci_hfd_no_sr.m` |
 | 分类器 | `rng(42)`；每类随机选 100 个片段训练、其余 100 个测试；`fitcknn(...,'NumNeighbors',1,'Distance','euclidean')` | 所有分类脚本 |
 
 完整的逐项参数索引见 [PARAMETERS.md](PARAMETERS.md)。代码的片段级划分会使同一源录音的片段同时进入训练和测试；它不是源文件级独立评估的声明。
 
-`v2/ci_fd_katz.m`、`v2/ci_fd_katz_sr.m` 与 `v2/ci_fd_fx.m` 实际构造的查找路径是 `v2/对比算法`，而归档实现位于仓库根目录 `对比算法/`。这是静态检查发现的本地配置边界；本次未修改历史算法脚本，运行前须由使用者明确配置 MATLAB 路径或目录布局并自行验证。
+`v3_ds` 的三种算法均保持各自原有数学定义与参数不变：FX 仍调用 `对比算法/FX.m`，CI-Higuchi 仍为 `kmax=20`、`alpha=0.95` 并保留原有置信区间异常值处理，Katz 仍调用 `对比算法/Katz_FD.m` 的原有曲线长度和直径计算。每个 v3 脚本现在产生 `800×10` 特征矩阵和 `800×1` 标签；列依次对应尺度 1 至 10。KNN 的随机种子、每类 100/100 划分、1 邻居、欧氏距离、标签和准确率计算均未改变。v3 的实际信号处理链没有调用 `Rung_kutta_JDSR_k`、双稳态随机共振函数或其数值积分参数。
+
+FX 的 `cellmax` 为每个粗粒化序列选择不小于其长度的最小 2 的幂：尺度 1 仍为 2048，保持修改前的调用；其余尺度避免将不合法的固定 2048 误用于不同长度，同时满足该实现的网格层级约束。三种脚本均在写入特征前检查结果是否为有限实数；异常会报告类别、样本和尺度，不以填充值或删样本掩盖问题。
+
+`v2/ci_fd_katz.m` 与 `v2/ci_fd_katz_sr.m` 实际构造的查找路径仍是 `v2/对比算法`，而归档实现位于仓库根目录 `对比算法/`。本次已将 `v2/ci_fd_fx.m` 修正为根目录的实际 FX 路径；其余历史脚本未修改。
 
 ## 已完成的操作 / Completed Work
 
@@ -168,7 +200,8 @@ flowchart TD
 |---|---|---|
 | 四类 CI-Higuchi、随机共振、RK4、KNN 实现 | `IMPLEMENTED`; `PENDING`（执行/验证） | 入口 `ci_hfd.m` 与 `Rung_kutta_JDSR_k.m` 已跟踪；没有提交的运行输出或结果文件。 |
 | 四类无 SR、Katz、FX 对比实现 | `IMPLEMENTED`; `PENDING`（执行/验证） | `ci_hfd_no_sr.m`、`ci_fd_katz.m`、`ci_fd_fx.m` 已跟踪；没有可核验运行记录。 |
-| 五类 `v2` CI-Higuchi、Katz（含/不含 SR）、FX 实现 | `IMPLEMENTED`; `PENDING`（执行/验证） | `v2/` 中对应脚本已跟踪；比较算法路径需人工配置。 |
+| 五类 `v2` 10 尺度粗粒化 CI-Higuchi 与 FX | `IMPLEMENTED`; `EXECUTED`; `VERIFIED`（本次） | `v2/ci_hfd_no_sr.m` 和 `v2/ci_fd_fx.m` 均用本地五类音频执行完成。保持每类 200 段、`rng(42)`、每类 100/100 训练测试划分、1-NN 欧氏距离和标签规则。CI-Higuchi 总体识别率为 77.20%，FX 为 79.80%。 |
+| 四类 `v3_ds` 十尺度 FX、CI-Higuchi、Katz | `IMPLEMENTED`; `PENDING`（完整 MATLAB 分类） | 静态检查确认每个 2048 点片段以 `tau=1:10` 直接生成 10 个非重叠均值粗粒化序列；三个脚本均为 `800×10` 特征和原有 `800×1` 标签。v3 目录未提供其脚本所期望的本地 `DeepShip-main/` 音频目录，故未伪造运行结果。 |
 | 性能指标、分类结果和结果文件 | `PENDING` | 仓库明确排除原始数据与结果，不编造准确率或性能。 |
 | `backup/`、`OG/` 历史副本 | `SUPERSEDED`（归档边界） | 已在 `.gitignore` 排除；不是公开主线或独立实验。 |
 | 已中止实验 | 无可核验条目 | 当前 Git 历史、公开文档和已跟踪代码中未发现可据实标记为 `ABORTED` 的记录。 |
@@ -187,9 +220,12 @@ flowchart TD
 
 | 更新时间（UTC+08:00） | 操作类型 | 更新内容 | 影响文件 | 状态 |
 |---|---|---|---|---|
-| 2026-10-27 20:33 | feat / docs | 新增五类舰船声音的 10 尺度 Petrosian 分形维数分类入口。每个 2048 点片段独立作 `tau=1:10` 非重叠均值粗粒化，组合为 `1000×10` 特征；保留 `rng(42)`、每类 100/100 划分及 1-NN 欧氏距离。静态检查确认直接调用原有 `Petrosian_FD.m`、输入可为行/列向量、特征有限实数检查带类别/样本/尺度上下文，且调用链不含随机共振。MATLAB 完整实验未运行，未记录识别率。 | `v2/ci_fd_petrosian_multiscale10.m`, `v2/Petrosian_FD.m`, `README.md` | 已完成（实现与静态检查）；完整实验待验证 |
+| 2026-10-27 22:43 | chore / docs | 首次本地归档前审计：归档已确认的 R/S 零方差块处理修订及其现有文档说明；未包含未确认的脚本删除、本地原始音频、实验草稿或下载目录。 | `v2/RS_FD.m`, `README.md` | 已完成（仅本地归档） |
 | 2026-10-27 21:46 | feat / docs | 新增五类 10 尺度 R/S 分形维数分类入口。每片段独立按 `tau=1:10` 非重叠均值粗粒化并形成 `1000×10` 特征，保持 `rng(42)`、每类 100/100 划分和 1-NN 欧氏距离。静态检查确认直接调用 `RS_FD.m` 的 `D=2-H` 标量输出、最短 204 点输入兼容且调用链不含随机共振；本次未运行 MATLAB。 | `v2/ci_fd_rs_multiscale10.m`, `v2/RS_FD.m`, `README.md` | 已完成（代码与静态检查）；运行待验证 |
 | 2026-10-27 21:10 | feat / docs | 新增五类舰船声音的 10 尺度 Dubuc 分形维数分类入口；每片段独立按 `tau=1:10` 非重叠均值粗粒化并形成 `1000×10` 特征，保留 `rng(42)`、每类 100/100 划分和 1-NN 欧氏距离。MATLAB `checkcode` 与完整运行均成功，未出现无效特征；总体识别率为 98.80%。 | `v2/ci_fd_dubuc_multiscale10.m`, `v2/Dubuc_FD.m`, `README.md` | 已完成（实现、静态检查与运行验证） |
+| 2026-10-27 20:33 | feat / docs | 新增五类舰船声音的 10 尺度 Petrosian 分形维数分类入口。每个 2048 点片段独立作 `tau=1:10` 非重叠均值粗粒化，组合为 `1000×10` 特征；保留 `rng(42)`、每类 100/100 划分及 1-NN 欧氏距离。静态检查确认直接调用原有 `Petrosian_FD.m`、输入可为行/列向量、特征有限实数检查带类别/样本/尺度上下文，且调用链不含随机共振。MATLAB 完整实验未运行，未记录识别率。 | `v2/ci_fd_petrosian_multiscale10.m`, `v2/Petrosian_FD.m`, `README.md` | 已完成（实现与静态检查）；完整实验待验证 |
+| 2026-10-27 19:52 | feat | 将 `v3_ds/ds_fx.m`、`v3_ds/ds_higuchi.m`、`v3_ds/ds_katz.m` 改为每片段 `tau=1:10` 非重叠均值粗粒化后的 10 维同算法分形特征；保留原有四类音频路径、2048 点分段、KNN 参数与准确率输出。FX 对每尺度按最小兼容 2 的幂设置 `cellmax`，尺度 1 仍为 2048；增加有限值检查。静态检查通过；由于 v3 本地音频路径缺失，未执行 MATLAB 完整分类，未填写准确率前后对比。本次 Git 提交信息：`feat: add 10-scale coarse-grained FD features to ds classifiers`。 | `v3_ds/ds_fx.m`, `v3_ds/ds_higuchi.m`, `v3_ds/ds_katz.m`, `README.md` | 已完成（实现与静态检查）；完整实验待验证 |
+| 2026-10-27 19:51 | feat / docs | `v2/ci_fd_fx.m` 与 `v2/ci_hfd_no_sr.m` 均改为对每个 2048 点片段作 `tau=1:10` 非重叠均值粗粒化，并生成 `1000×10` 特征矩阵；FX 按每尺度最大 2 次幂截取同步设置 `cellmax`，CI-Higuchi 保持 `kmax=20`。修正五类 FX 脚本至根目录 `对比算法/FX.m` 的实际路径。完成 MATLAB 静态检查及实际运行：FX 79.80%，CI-Higuchi 77.20%；FX 有原函数 `polyfit` 秩亏警告，未产生非有限特征。 | `v2/ci_fd_fx.m`, `v2/ci_hfd_no_sr.m`, `README.md` | 已完成（实现、静态检查与运行验证） |
 | 2026-10-27 15:59 | docs | 建立持续维护的 GitHub 首页：基于已跟踪 MATLAB 源码补充真实目录、Mermaid 数据流、参数、复现边界、实验状态与 Git 更新日志；新增项目维护规则。未运行实验。 | `README.md`, `AGENTS.md` | 已完成（文档）；实验待验证 |
 | 2026-10-27 15:49 | docs | 创建公开代码归档、参数/实验说明与排除规则；该时间来自 commit `c363805`。 | `.gitignore`, `README.md`, `PARAMETERS.md`, `EXPERIMENTS.md`, MATLAB 源文件 | 已完成（本地归档）；远端备份待验证 |
 
@@ -214,23 +250,7 @@ flowchart TD
     H --> I[rng(42)；每类 100 训练 / 100 测试]
     I --> J[1-NN；欧氏距离；识别率和混淆矩阵]
 ```
-## v3_ds 十尺度更新 / v3_ds 10-Scale Update
 
-更新时间（UTC+08:00）：2026-10-27 19:52。`v3_ds/ds_fx.m`、`v3_ds/ds_higuchi.m` 和 `v3_ds/ds_katz.m` 处理实际的四类音频（Cargo、Passengership、Tanker、Tug）。保留 `audioread`、多声道 `mean(x,2)`、每类前 200 个非重叠 2048 点片段、`rng(42)`、每类 100/100 训练测试划分、1-NN 欧氏距离及原有准确率输出。
-
-每个独立片段直接按 `tau=1:10` 作非重叠分组均值：`y_tau(j)=mean(x((j-1)*tau+1:j*tau))`，尾部不足一组的点舍弃。尺度长度依次为 2048、1024、682、512、409、341、292、256、227、204；每个样本得到同一算法的 10 维特征，三个脚本的 `features` 均为 `800×10`，`labels` 为 `800×1`。FX、CI-Higuchi、Katz 的原有数学定义与参数保持不变；FX 对每尺度取不小于输入长度的最小 2 的幂 `cellmax`，尺度 1 仍为 2048。完整信号路径不调用 `Rung_kutta_JDSR_k`、双稳态随机共振或其数值积分。
-
-```mermaid
-flowchart LR
- A[四类原始音频] --> B[原有预处理与 2048 点分段]
- B --> C[tau=1:10 独立非重叠粗粒化]
- C --> D[10 个同算法分形维数]
- D --> E[每片段 10 维特征]
- E --> F[原有划分与 1-NN KNN]
- F --> G[四类与总体识别率]
-```
-
-已实际验证：MATLAB 静态分析无语法问题（CI-Higuchi 保留原有未调用 `Traditional_Higuchi` 提示）；独立 2048 点检查确认尺度 1 逐元素一致、尺度 10 为 204 点，10 个尺度的 FX 与 Katz 结果均为有限实数。`v3_ds` 的预期本地 `DeepShip-main/` 路径不存在，故未执行完整分类，未填写准确率前后比较。本次提交记录：`feat: add 10-scale coarse-grained FD features to ds classifiers`。
 ## 新增实验：10 尺度 Petrosian 分形维数舰船声音分类
 
 入口为 `v2/ci_fd_petrosian_multiscale10.m`，依赖同目录的 `v2/Petrosian_FD.m`。后者是原有 Petrosian 分形维数实现：将任意实数向量转换为列向量，以一阶差分符号变化次数 `N_delta` 计算单个标量维数；本实验未修改该算法文件的数学定义。
@@ -293,3 +313,5 @@ flowchart TD
 ```
 
 更新记录：2026-10-27 21:46（UTC+08:00）创建 `v2/ci_fd_rs_multiscale10.m`，接入原有 `v2/RS_FD.m`，实现十尺度独立粗粒化与 `1000×10` 特征构建。已完成代码文本、函数接口、最短输入窗口兼容性、特征有效性防护、KNN 参数及直接调用链检查；本次明确未运行 MATLAB、音频读取、特征计算、训练或分类，未产生识别率或混淆矩阵。
+
+
