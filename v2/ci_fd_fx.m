@@ -1,13 +1,13 @@
-% 实验名称：无随机共振的计盒维数五类舰船声音分类
-% 是否包含随机共振：否
+% 实验名称：计盒维数五类舰船声音分类
 % 分形维数算法：FX.m 中的计盒维数
-% 相对 ci_hfd.m 的修改：删除随机共振参数及 Rung_kutta_JDSR_k 调用，
-% 以 FX 替换 CI_Higuchi；cellmax=2048 与每段信号长度一致，且为 2 的幂。
 clear; clc; close all;
 
 %% 1. 载入五类舰船声音
 project_path = fileparts(mfilename('fullpath'));
-comparison_path = fullfile(project_path, '对比算法');
+comparison_path = fullfile(fileparts(project_path), '对比算法');
+if exist(fullfile(comparison_path, 'FX.m'), 'file') ~= 2
+    error('找不到 FX.m：%s', comparison_path);
+end
 addpath(comparison_path);       % 引用原有 FX.m，不修改对比算法文件
 audio_dirs = { ...
     fullfile(project_path, '音频', '国家渡轮'), ...
@@ -41,18 +41,36 @@ x4 = x_all{4};       % 舷外发动机发出呜呜声和加速
 x5 = x_all{5};       % 游轮
 
 
-%% 2. 计算五类计盒维数特征（不使用随机共振）
-cellmax = 2048;      % FX 的网格上限；等于每个固定长度分段
-
-features = zeros(num_classes * 200, 1);
+%% 2. 计算五类计盒维数特征
+scales = 1:10;
+num_scales = length(scales);
+features = zeros(num_classes * 200, num_scales);
 labels = zeros(num_classes * 200, 1);
 x_all = {x1, x2, x3, x4, x5};
 for c = 1:num_classes
     for i = 1:200
         idx = (i-1) * 2048 + (1:2048);
         x = x_all{c}(idx);
-        features((c-1)*200 + i) = FX(x, cellmax);
-        labels((c-1)*200 + i) = c;
+        feature_idx = (c-1)*200 + i;
+        for scale_idx = 1:num_scales
+            tau = scales(scale_idx);
+            if tau == 1
+                x_coarse = x;
+            else
+                coarse_length = floor(length(x) / tau);
+                x_coarse = mean(reshape(x(1:coarse_length*tau), tau, []), 1).';
+            end
+
+            cellmax = 2^floor(log2(length(x_coarse)));
+            x_fx = x_coarse(1:cellmax);
+            features(feature_idx, scale_idx) = FX(x_fx, cellmax);
+            if ~isreal(features(feature_idx, scale_idx)) || ...
+                    ~isfinite(features(feature_idx, scale_idx))
+                error('FX 特征不是有限实数：类别 %d，样本 %d，尺度 %d。', ...
+                    c, i, tau);
+            end
+        end
+        labels(feature_idx) = c;
     end
 end
 

@@ -1,8 +1,5 @@
-% 实验名称：无随机共振的 CI-Higuchi 分形维数五类舰船声音分类
-% 是否包含随机共振：否
+% 实验名称：CI-Higuchi 分形维数五类舰船声音分类
 % 分形维数算法：置信区间改进 Higuchi（CI-Higuchi）
-% 相对 ci_hfd.m 的修改：删除随机共振参数及 Rung_kutta_JDSR_k 调用，
-% 直接将每个原始 2048 点信号分段传入 CI_Higuchi。
 clear; clc; close all;
 
 %% 1. 载入五类舰船声音
@@ -39,19 +36,40 @@ x4 = x_all{4};       % 舷外发动机发出呜呜声和加速
 x5 = x_all{5};       % 游轮
 
 
-%% 2. 计算五类 CI-Higuchi 特征（不使用随机共振）
+%% 2. 计算五类 CI-Higuchi 特征
 kmax = 20;          % 常用尺度
 alpha = 0.95;       % 95% 置信区间
+scales = 1:10;
+num_scales = length(scales);
 
-features = zeros(num_classes * 200, 1);
+features = zeros(num_classes * 200, num_scales);
 labels = zeros(num_classes * 200, 1);
 x_all = {x1, x2, x3, x4, x5};
 for c = 1:num_classes
     for i = 1:200
         idx = (i-1) * 2048 + (1:2048);
         x = x_all{c}(idx);
-        features((c-1)*200 + i) = CI_Higuchi(x, kmax, alpha);
-        labels((c-1)*200 + i) = c;
+        feature_idx = (c-1)*200 + i;
+        for scale_idx = 1:num_scales
+            tau = scales(scale_idx);
+            if tau == 1
+                x_coarse = x;
+            else
+                coarse_length = floor(length(x) / tau);
+                x_coarse = mean(reshape(x(1:coarse_length*tau), tau, []), 1).';
+            end
+            if length(x_coarse) < 2 * kmax
+                error('Higuchi 输入长度不足：类别 %d，样本 %d，尺度 %d。', ...
+                    c, i, tau);
+            end
+            features(feature_idx, scale_idx) = CI_Higuchi(x_coarse, kmax, alpha);
+            if ~isreal(features(feature_idx, scale_idx)) || ...
+                    ~isfinite(features(feature_idx, scale_idx))
+                error('CI-Higuchi 特征不是有限实数：类别 %d，样本 %d，尺度 %d。', ...
+                    c, i, tau);
+            end
+        end
+        labels(feature_idx) = c;
     end
 end
 
