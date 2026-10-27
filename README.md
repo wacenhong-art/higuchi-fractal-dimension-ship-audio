@@ -137,3 +137,20 @@ flowchart TD
     H --> I[rng(42)；每类 100 训练 / 100 测试]
     I --> J[1-NN；欧氏距离；识别率和混淆矩阵]
 ```
+## v3_ds 十尺度更新 / v3_ds 10-Scale Update
+
+更新时间（UTC+08:00）：2026-10-27 19:52。`v3_ds/ds_fx.m`、`v3_ds/ds_higuchi.m` 和 `v3_ds/ds_katz.m` 处理实际的四类音频（Cargo、Passengership、Tanker、Tug）。保留 `audioread`、多声道 `mean(x,2)`、每类前 200 个非重叠 2048 点片段、`rng(42)`、每类 100/100 训练测试划分、1-NN 欧氏距离及原有准确率输出。
+
+每个独立片段直接按 `tau=1:10` 作非重叠分组均值：`y_tau(j)=mean(x((j-1)*tau+1:j*tau))`，尾部不足一组的点舍弃。尺度长度依次为 2048、1024、682、512、409、341、292、256、227、204；每个样本得到同一算法的 10 维特征，三个脚本的 `features` 均为 `800×10`，`labels` 为 `800×1`。FX、CI-Higuchi、Katz 的原有数学定义与参数保持不变；FX 对每尺度取不小于输入长度的最小 2 的幂 `cellmax`，尺度 1 仍为 2048。完整信号路径不调用 `Rung_kutta_JDSR_k`、双稳态随机共振或其数值积分。
+
+```mermaid
+flowchart LR
+ A[四类原始音频] --> B[原有预处理与 2048 点分段]
+ B --> C[tau=1:10 独立非重叠粗粒化]
+ C --> D[10 个同算法分形维数]
+ D --> E[每片段 10 维特征]
+ E --> F[原有划分与 1-NN KNN]
+ F --> G[四类与总体识别率]
+```
+
+已实际验证：MATLAB 静态分析无语法问题（CI-Higuchi 保留原有未调用 `Traditional_Higuchi` 提示）；独立 2048 点检查确认尺度 1 逐元素一致、尺度 10 为 204 点，10 个尺度的 FX 与 Katz 结果均为有限实数。`v3_ds` 的预期本地 `DeepShip-main/` 路径不存在，故未执行完整分类，未填写准确率前后比较。本次提交记录：`feat: add 10-scale coarse-grained FD features to ds classifiers`。
