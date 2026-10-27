@@ -59,22 +59,27 @@ function [D, H, windowSizes, meanRS] = RS_FD(x, windowSizes)
         w = windowSizes(j);
         numBlocks = floor(N / w);
         ratios = zeros(1, numBlocks);
+        validBlocks = false(1, numBlocks);
 
         for b = 1:numBlocks
             first = (b-1) * w + 1;
             block = x(first:first+w-1);
             centered = block - mean(block);
             S = sqrt(mean(centered .^ 2));
-            if S == 0
-                error('RS_FD:ConstantBlock', ...
-                    ['A constant block of length %d was found. ', ...
-                     'R/S is undefined for zero variance.'], w);
+            if S > 0
+                cumulative = cumsum(centered);
+                R = max(cumulative) - min(cumulative);
+                ratios(b) = R / S;
+                validBlocks(b) = true;
             end
-            cumulative = cumsum(centered);
-            R = max(cumulative) - min(cumulative);
-            ratios(b) = R / S;
         end
-        meanRS(j) = mean(ratios);
+        if ~any(validBlocks)
+            error('RS_FD:NoValidBlocks', ...
+                ['All nonoverlapping blocks of length %d have zero variance. ', ...
+                 'R/S cannot be estimated at this window size.'], w);
+        end
+        % R/S is undefined for zero-variance blocks; average valid blocks only.
+        meanRS(j) = mean(ratios(validBlocks));
     end
 
     if any(~isfinite(meanRS)) || any(meanRS <= 0)
