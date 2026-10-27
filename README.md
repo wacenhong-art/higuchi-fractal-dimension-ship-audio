@@ -30,6 +30,30 @@
 └── AGENTS.md                   # 本项目 Git 与 README 长期维护规则
 ```
 
+## 2026-10-27：v3_ds 十尺度 Petrosian 分类 / 10-Scale Petrosian Classification
+
+新增 `v3_ds/ds_petrosian.m`，使用同目录原有的 `Petrosian_FD.m`。该函数保持原始 Petrosian 定义不变：以一阶差分符号变化数 `N_delta` 计算 `D = log10(N) / (log10(N) + log10(N / (N + 0.4*N_delta)))`；主程序只按其既有单输入、单标量输出接口调用，未修改其公式。
+
+程序优先使用 `v3_ds/DeepShip-main/` 中的四个指定输入：Cargo `27.wav`、Passengership `1.wav`、Tanker `2.wav` 和 Tug `9.wav`。每类通过 `audioread` 读取，多声道按 `mean(x,2)` 转为单声道；从每类信号前部依次截取 200 个不重叠的 2048 点片段，索引为 `idx = (i-1)*2048 + (1:2048)`，长度不足则报错。
+
+每个原始 2048 点片段独立按 `tau=1:10` 做非重叠均值粗粒化，尾部不足一组的点舍弃。因此 10 个尺度长度依次为 2048、1024、682、512、409、341、292、256、227、204；每个粗粒化序列计算一个 Petrosian 分形维数，构成 `800×10` 的 `features`，同时生成 `800×1` 的 `labels`。程序对每个特征检查有限实数；异常会报告类别、样本、尺度及函数调用原因。
+
+分类保持四类既有规则：`rng(42)` 后每类随机选 100 个训练片段，其余 100 个测试；`fitcknn` 使用全部 10 列特征、`NumNeighbors=1` 和欧氏距离。输出 Cargo、Passengership、Tanker、Tug 各类识别率、总体识别率，以及“行=真实类别、列=预测类别”、类别顺序与输入一致的 4×4 混淆矩阵。
+
+```mermaid
+flowchart TD
+    A[四个指定 DeepShip WAV] --> B[audioread；多声道 mean(x,2)]
+    B --> C[每类前 200 个非重叠 2048 点片段]
+    C --> D[每片段独立 tau=1:10 非重叠均值粗粒化]
+    D --> E[每尺度调用原有 Petrosian_FD]
+    E --> F[800x10 特征；800x1 标签]
+    F --> G[rng(42)；每类 100 训练和 100 测试]
+    G --> H[1-NN；欧氏距离；全部 10 列]
+    H --> I[四类和总体识别率；4x4 混淆矩阵]
+```
+
+更新时间（UTC+08:00）：2026-10-27 20:34。操作：新增并运行十尺度 Petrosian 分类实验；影响文件：`v3_ds/ds_petrosian.m`、`README.md`；验证状态：`EXECUTED`。输出 `features=800×10`、训练集 `400×10`、测试集 `400×10`；Cargo、Passengership、Tanker、Tug 识别率和总体识别率均为 100.00%，混淆矩阵为 `diag([100,100,100,100])`。该新增流程未调用随机共振、RK4 或相关函数。
+
 未纳入公开版本控制的本地目录包括 `DeepShip-main/`、`v2/音频/`、`backup/`、`OG/` 和 `材料/`。其中前两者含原始或本地音频；`backup/` 与 `OG/` 是历史副本，不是正式入口或独立实验版本。
 
 ## 程序流程图 / Program Workflow
