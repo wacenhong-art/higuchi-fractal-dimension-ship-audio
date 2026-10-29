@@ -128,7 +128,24 @@ y_\tau(j)=\operatorname{mean}\left(x((j-1)\tau+1:j\tau)\right),\quad \tau=1,\ldo
 
 ## 8. 实验结果
 
-本次仅更新文档，未执行实验，也未新增或改写识别率。待在明确的数据版本、运行日志和划分协议下完成可复核运行后，可在此补充准确率、混淆矩阵及其证据链接；在此之前，不宣称 Katz 优于任一对比算法。
+2026-10-29 已在 MATLAB R2024b 中直接重跑当前仍存在的八个原始分类脚本，未修改源文件。以下均为原脚本 `rng(42)` 的单次结果：每类 200 个连续 2048 点片段、100 训练/100 测试、1-NN 欧氏距离、无特征标准化；不报告重复标准差。
+
+| 数据集 | 原始入口 | KNN 实际特征维数 | 总体准确率 |
+|---|---|---:|---:|
+| v2 八类 | `v2/ci_fd_katz_multiscale10.m` | 10 | 98.375% |
+| v2 八类 | `v2/ci_hfd_no_sr.m` | 10 | 97.375% |
+| v2 八类 | `v2/ci_fd_fx.m` | 10 | 81.50% |
+| v2 八类 | `v2/ci_fd_rs_multiscale10.m` | 10 | 84.50% |
+| v3_ds 四类 | `v3_ds/ds_katz.m` | 1 | 98.00% |
+| v3_ds 四类 | `v3_ds/ds_higuchi.m` | 1 | 87.25% |
+| v3_ds 四类 | `v3_ds/ds_fx.m` | 1 | 73.50% |
+| v3_ds 四类 | `v3_ds/ds_rs.m` | 10 | 91.50% |
+
+重要差异：`v3_ds` 的 Katz、CI-Higuchi、FX 原脚本虽然提取 10 列特征，但 `features(train_idx)` / `features(~train_idx)` 采用线性索引，实际只把第一尺度送入 KNN；整合入口采用行索引保留 10 列，并运行 10 次，故旧整合图/CSV 的数值不能代表这些原脚本的结果。原脚本 CI-Higuchi 的 Cargo、Passengership、Tanker、Tug 识别率分别为 72%、100%、100%、77%，与用户给出的混淆矩阵完全一致。现有原始入口没有独立运行传统 Higuchi 的分类实验；本次不为它生成识别率。已删除的 Petrosian、Dubuc 入口不恢复、不运行；`v2/untitled.m` 是单类单样本草稿，不能形成有效测试集，不计作分类结果。
+
+运行环境仅通过 `addpath` 补充仓库根 `对比算法/` 与 `v2/` 的现有函数路径；`v3_ds` 的 `RS_FD` 实际解析到 `v2/RS_FD.m`。`v2` FX 出现拟合点数不足的 `polyfit` 警告，已保留，未调整算法或隐藏警告。原脚本中不存在的 `v3_ds/对比算法` 路径也会产生警告。两个 DeepShip 候选目录中的四个指定 WAV 经 SHA-256 核对相同。
+
+本地运行证据保存在 `results_original_script_audit_20261029_1704/`：八份原始运行日志、八份特征/训练测试标签/预测/混淆矩阵 MAT、总体汇总 `original_accuracy_results.csv` 和逐类汇总 `original_class_accuracy_results.csv`。总体识别率已分别通过预测标签和混淆矩阵对角线核算一致。实验数据与缓存不提交 Git；旧 `results_fd_comparison/` 图表与结果保持原样，不作为本次原脚本证据。
 
 ## 9. 多算法对比输出
 
@@ -162,6 +179,7 @@ DeepShip 会在实际存在的候选目录中寻找同时含有 `Cargo/27.wav`�
 
 | 更新时间（UTC+08:00） | 操作类型 | 更新内容 | 影响文件 | 状态 |
 |---|---|---|---|---|
+| 2026-10-29 17:09 | experiment / docs | 按原脚本重跑并核对 v2/v3_ds 共八个分类入口，保存本地日志、预测与混淆矩阵、总体/逐类 CSV；复现 v3_ds CI-Higuchi 87.25%，记录三入口的第一列线性索引与整合版十维/十次重复的协议差异，保留 FX 警告。所有既有 MATLAB 源码及旧图表不变。 | `README.md`；本地运行证据目录 `results_original_script_audit_20261029_1704/`（不提交实验缓存） | 八个入口实际运行成功；预测与混淆矩阵准确率核算一致 |
 | 2026-10-29 16:41 | feat / docs | 补充提交 `plot_ship_time_domain.m` 实现文件，并静态核对其 DeepShip 候选路径、八类目录的排序首个可读文件选择、真实采样率时间轴、固定子图缺失提示和 300 dpi 导出逻辑；未运行 MATLAB、Octave、音频读取或绘图，未生成图片。 | `plot_ship_time_domain.m`, `README.md` | 已完成（静态代码与路径核对）；运行待验证 |
 | 2026-10-29 16:37 | feat / docs | 新增独立原始时域波形可视化脚本：运行时定位现有 DeepShip 四个指定 WAV，并从 `v2/音频` 的八类目录按文件名选择首个可由 `audioread` 读取的代表音频；分别生成 2×2 与 4×2 Figure，支持缺失位提示、真实采样率时间轴和 300 dpi PNG 导出。未运行 MATLAB、Octave、音频读取或绘图，未生成图片。 | `plot_ship_time_domain.m`, `README.md` | 已完成（静态代码与路径核对）；运行待验证 |
 | 2026-10-29 16:36 | feat / docs | 新增独立的 `v2` 八类与 `v3_ds` DeepShip 四类多算法比较入口：以真实 2048 点片段分别进行 `tau=1:10` 非重叠均值粗粒化，比较 Katz、CI-Higuchi、传统 Higuchi、FX 与 R/S；新增共享分层重复 KNN、准确率柱状图、t-SNE 综合图和 CSV/MAT 导出逻辑。已有 MATLAB 文件保持不变；本次未运行 MATLAB、Octave、音频读取、特征提取、训练、分类或 t-SNE。 | `v2/compare_all_fd_v2.m`, `v3_ds/compare_all_fd_v3_ds.m`, `README.md` | 已完成（静态审计与文本结构检查；运行未执行） |
