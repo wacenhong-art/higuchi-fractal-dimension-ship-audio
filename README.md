@@ -162,6 +162,7 @@ DeepShip 会在实际存在的候选目录中寻找同时含有 `Cargo/27.wav`�
 
 | 更新时间（UTC+08:00） | 操作类型 | 更新内容 | 影响文件 | 状态 |
 |---|---|---|---|---|
+| 2026-10-29 16:41 | feat / docs | 补充提交 `plot_ship_time_domain.m` 实现文件，并静态核对其 DeepShip 候选路径、八类目录的排序首个可读文件选择、真实采样率时间轴、固定子图缺失提示和 300 dpi 导出逻辑；未运行 MATLAB、Octave、音频读取或绘图，未生成图片。 | `plot_ship_time_domain.m`, `README.md` | 已完成（静态代码与路径核对）；运行待验证 |
 | 2026-10-29 16:37 | feat / docs | 新增独立原始时域波形可视化脚本：运行时定位现有 DeepShip 四个指定 WAV，并从 `v2/音频` 的八类目录按文件名选择首个可由 `audioread` 读取的代表音频；分别生成 2×2 与 4×2 Figure，支持缺失位提示、真实采样率时间轴和 300 dpi PNG 导出。未运行 MATLAB、Octave、音频读取或绘图，未生成图片。 | `plot_ship_time_domain.m`, `README.md` | 已完成（静态代码与路径核对）；运行待验证 |
 | 2026-10-29 16:36 | feat / docs | 新增独立的 `v2` 八类与 `v3_ds` DeepShip 四类多算法比较入口：以真实 2048 点片段分别进行 `tau=1:10` 非重叠均值粗粒化，比较 Katz、CI-Higuchi、传统 Higuchi、FX 与 R/S；新增共享分层重复 KNN、准确率柱状图、t-SNE 综合图和 CSV/MAT 导出逻辑。已有 MATLAB 文件保持不变；本次未运行 MATLAB、Octave、音频读取、特征提取、训练、分类或 t-SNE。 | `v2/compare_all_fd_v2.m`, `v3_ds/compare_all_fd_v3_ds.m`, `README.md` | 已完成（静态审计与文本结构检查；运行未执行） |
 | 2026-10-27 23:35 | docs | 研究主体调整：由 CI-Higuchi 转向 Katz 分形维数。重写 GitHub 首页定位、Katz 算法与多尺度流程图；将 Higuchi 调整为对比算法；按当前工作区更新目录及文件说明。未运行 MATLAB 或分类实验。 | `README.md` | 已完成（静态代码核对；运行未执行） |
