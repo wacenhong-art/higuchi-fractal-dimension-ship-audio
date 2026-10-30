@@ -1,8 +1,7 @@
-% 实验名称：无随机共振的 CI-Higuchi 分形维数四类舰船声音分类
+% 实验名称：无随机共振的传统 Higuchi 分形维数四类舰船声音分类
 % 是否包含随机共振：否
-% 分形维数算法：置信区间改进 Higuchi（CI-Higuchi）
-% 相对 ci_hfd.m 的修改：删除随机共振参数及 Rung_kutta_JDSR_k 调用，
-% 将每个原始 2048 点信号分段的各尺度粗粒化序列传入 CI_Higuchi。
+% 分形维数算法：传统 Higuchi（Higuchi, 1988）
+% 每个 2048 点片段在各粗粒化尺度上调用传统 Higuchi；不含随机共振。
 clear; clc; close all;
 
 %% 1. 载入四类舰船声音
@@ -33,9 +32,8 @@ x3 = x_all{3};       % Tanker
 x4 = x_all{4};       % Tug
 
 
-%% 2. 计算四类 CI-Higuchi 特征（不使用随机共振）
+%% 2. 计算四类传统 Higuchi 特征（不使用随机共振）
 kmax = 20;          % 常用尺度
-alpha = 0.95;       % 95% 置信区间
 
 tau = 1:10;
 features = zeros(800, numel(tau));
@@ -47,9 +45,9 @@ for c = 1:4
         x = x_all{c}(idx);
         for scale_idx = 1:numel(tau)
             x_coarse = CoarseGrain(x, tau(scale_idx));
-            fd = CI_Higuchi(x_coarse, kmax, alpha);
+            fd = Traditional_Higuchi(x_coarse, kmax);
             if ~isreal(fd) || ~isfinite(fd)
-                error('CI-Higuchi 特征不是有限实数：类别 %d，样本 %d，尺度 %d。', ...
+                error('传统 Higuchi 特征不是有限实数：类别 %d，样本 %d，尺度 %d。', ...
                     c, i, tau(scale_idx));
             end
             features((c-1)*200 + i, scale_idx) = fd;
@@ -66,6 +64,7 @@ for c = 1:4
     train_idx(idx) = true;
 end
 
+% 保留既有线性索引：KNN 只使用第一尺度；十列均保留供 t-SNE 展示。
 X_train = features(train_idx);
 Y_train = labels(train_idx);
 X_test = features(~train_idx);
@@ -89,81 +88,46 @@ disp('混淆矩阵（行=真实标签，列=预测标签）：');
 disp(confusion_matrix);
 
 
-%% ==============================
-%%  核心1：置信区间改进 Higuchi（你的创新）
-%% ==============================
-function [D] = CI_Higuchi(x, kmax, alpha)
-    N = length(x);
-    L = zeros(1, kmax);
+%% 5. 保存本次真实分类结果与混淆矩阵图
+result_dir = fullfile(project_path, 'results_traditional_higuchi');
+if ~isfolder(result_dir), mkdir(result_dir); end
+f = figure('Visible', 'off', 'Color', 'w');
+chart = confusionchart(confusion_matrix, class_names);
+chart.Title = sprintf('Traditional Higuchi: %.2f%% (KNN %d-D)', ...
+    mean(Y_pred == Y_test) * 100, size(X_train, 2));
+exportgraphics(f, fullfile(result_dir, 'confusion_matrix.png'), 'Resolution', 300);
+exportgraphics(f, fullfile(result_dir, 'confusion_matrix.pdf'), 'ContentType', 'vector');
+close(f);
+save(fullfile(result_dir, 'classification_result.mat'), 'features', 'labels', ...
+    'train_idx', 'X_train', 'X_test', 'Y_train', 'Y_test', 'Y_pred', ...
+    'confusion_matrix', 'class_names', 'kmax');
 
-    for k = 1:kmax
-        Lk = zeros(1, k);
-        for m = 1:k
-            seq = x(m:k:N);
-            n = length(seq);
-            if n < 2
-                Lk(m) = 0;
-                continue;
-            end
-            sum_len = sum(abs(diff(seq)));
-            coeff = (N - 1) / (n * k);
-            Lk(m) = sum_len * coeff;
-        end
-
-        % ========== 置信区间剔除异常分形长度 ==========
-        Lk_valid = RemoveOutliers_CI(Lk, alpha);
-        if ~isempty(Lk_valid)
-            L(k) = mean(Lk_valid);
-        else
-            L(k) = mean(Lk);
-        end
-    end
-
-    logk = log(1:kmax);
-    logL = log(L + eps);
-    p = polyfit(logk, logL, 1);
-    D = -p(1);
-end
-
-%% ==============================
-%%  核心2：95% 置信区间剔除离群值
-%% ==============================
-function [y_valid] = RemoveOutliers_CI(y, alpha)
-    y = y(y > 0);
-    if length(y) < 3
-        y_valid = y;
-        return;
-    end
-    mu = mean(y);
-    sig = std(y);
-    n = length(y);
-    t = tinv((1+alpha)/2, n-1);
-    lower = mu - t*sig;
-    upper = mu + t*sig;
-    y_valid = y(y >= lower & y <= upper);
-end
-
-%% ==============================
-%%  传统 Higuchi（用于对比）
-%% ==============================
-function [D] = Traditional_Higuchi(x, kmax)
-    N = length(x);
+%% 传统 Higuchi 核心：不使用置信区间或离群值筛选
+function D = Traditional_Higuchi(x, kmax)
+    % Higuchi (1988), Eq. (1): all offsets, arithmetic mean, ordinary LS.
+    % https://www.ism.ac.jp/~higuchi/index_e/papers/PhysicaD-1988.pdf
+    % Nm counts increments, not points; the two k factors are required.
+    validateattributes(x, {'numeric'}, {'vector', 'real', 'finite'});
+    x = double(x(:));
+    N = numel(x);
+    validateattributes(kmax, {'numeric'}, ...
+        {'scalar', 'integer', '>=', 2, '<=', floor(N / 2)});
     L = zeros(1, kmax);
     for k = 1:kmax
-        Lk = zeros(1, k);
+        Lm = zeros(1, k);
         for m = 1:k
-            seq = x(m:k:N);
-            n = length(seq);
-            sum_len = sum(abs(diff(seq)));
-            coeff = (N - 1) / (n * k);
-            Lk(m) = sum_len * coeff;
+            Nm = floor((N - m) / k);
+            seq = x(m + (0:Nm) * k);
+            Lm(m) = sum(abs(diff(seq))) * (N - 1) / (Nm * k^2);
         end
-        L(k) = mean(Lk);
+        L(k) = mean(Lm); % Retain every offset; no outlier rejection.
     end
-    logk = log(1:kmax);
-    logL = log(L + eps);
-    p = polyfit(logk, logL, 1);
-    D = -p(1);
+    if any(L <= 0)
+        error('TraditionalHiguchi:ZeroLength', ...
+            'Higuchi 对数拟合要求所有 L(k)>0；不添加 eps 或删除拟合点。');
+    end
+    p = polyfit(log(1 ./ (1:kmax)), log(L), 1);
+    D = p(1);
 end
 
 function y = CoarseGrain(x, tau)
