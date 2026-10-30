@@ -217,62 +217,65 @@ DeepShip 会在实际存在的候选目录中寻找同时含有 `Cargo/27.wav`�
 
 本次仅创建代码并完成静态检查；未运行 MATLAB、Octave、音频读取、绘图或实验，故 PNG 尚未生成，运行时兼容性和音频可读性仍待实际执行验证。
 
-## FLDE 风格配图入口（2026-10-30）
+## FLDE 风格配图入口（当前：原脚本单次结果）
 
-`v2` 为 **National Park** 八类，`v3_ds` 为 **DeepShip** 四类。运行 `v2/compare_all_fd_v2.m` 或 `v3_ds/compare_all_fd_v3_ds.m`，均调用共享 `run_flde_comparison.m`。参考图的逐项样式、文字和数据清单见 [FLDE_FIGURE_AUDIT.md](FLDE_FIGURE_AUDIT.md)。下文原有单次整合入口说明属于修改前历史；当前入口使用本节协议。
+`v2` 为 **National Park** 八类，`v3_ds` 为 **DeepShip** 四类。入口为 `v2/compare_all_fd_v2.m`、`v3_ds/compare_all_fd_v3_ds.m`，共享 `run_flde_comparison.m`。参考原图分析见 [FLDE_FIGURE_AUDIT.md](FLDE_FIGURE_AUDIT.md)。
 
-保留原有 Katz、传统 Higuchi、FX、R/S 特征提取、音频源、每类200个2048点片段、tau=1:10及无标准化欧氏1-NN；不替换为论文中的熵算法或SVM。v2各算法分类10维；DeepShip前三种保留原脚本第一列、R/S十列，t-SNE均展示十列。因保留此历史差异，图中方法准确率不能视作同维度比较。新协议将单次划分扩展为20次共享分层随机划分，种子42:61，每类100训练/100测试；误差棒为准确率的样本标准差，第一轮逐一核对原脚本预测。相邻片段共享录音来源，不代表独立录音泛化。
+### 统计口径修正
 
-t-SNE固定种子1042、perplexity=30、不标准化；SC在**原始十维特征欧氏空间**计算，不是二维t-SNE空间。FLDE正文未明确SC空间，因此不宣称SC定义完全复现原论文。绘图采用Times New Roman、向内刻度、低饱和柱色、黑色误差棒、两位小数均值±标准差、空心散点、三位小数SC、底部有框图例；四种方法使用2×2布局。National Park八类图例按真实音频顺序增加颜色和标记。
+上一版为模仿FLDE误差棒，把原脚本单次准确率改成20次随机划分的均值：National Park Katz原始值98.375%，20次均值97.70625%。二者均可由真实预测计算，但不能互相替代。**当前所有柱高及柱顶数字均恢复为原脚本 `rng(42)` 的单次准确率**，显示三位小数，标题注明 `Single run (seed = 42)`；不绘制误差棒，不将单次标准差伪写为0。旧20次输出完整备份在本地 `backup/flde_before_single_run_20261030_202241/`，不得继续用旧均值配图表述原脚本结果。
+
+保留四个原算法 Katz、传统Higuchi、FX、R/S、原音频、每类200个2048点片段、tau=1:10、每类100训练/100测试、无标准化欧氏1-NN。v2分类均十维；DeepShip Katz/Higuchi/FX保留原脚本第一列，R/S十列；t-SNE均用全部十列。这一维数差异保留并明确说明，不宣称同维度比较；片段级划分不等同独立录音泛化。
+
+t-SNE种子1042、perplexity30、不标准化；SC为原始十维特征空间的欧氏轮廓系数。参考正文没有明确SC计算空间，故不宣称与论文SC定义完全相同。三位小数SC标题、空心标记、Times New Roman、向内刻度、底部有框图例保留；四方法用2×2子图，National Park八类扩展标记和两行图例。
 
 ```mermaid
 flowchart TD
-    A[National Park 八类 / DeepShip 四类音频] --> B[直接调用四个原分类脚本提取十尺度特征]
-    B --> C[核对标签、音频路径、原始分类列数]
-    C --> D[保存 features.mat、源脚本内容与源文件路径]
-    D --> E[20次共享分层划分 seed 42至61]
-    E --> F[原有列数的无标准化欧氏1-NN]
-    F --> G[保存预测、划分、混淆矩阵、均值及样本标准差]
-    D --> H[十维特征固定种子 t-SNE]
-    D --> I[十维原始特征欧氏轮廓系数 SC]
-    G --> J[experiment.mat 与 CSV]
-    H --> J
+    A[National Park 八类 / DeepShip 四类原音频] --> B[直接执行四个原脚本并收集十尺度特征与真实预测]
+    B --> C[核对音频路径、标签、分类列数与 rng42 划分]
+    C --> D[原有列数和无标准化欧氏1-NN重新预测]
+    D --> E[逐预测与原脚本一致；混淆矩阵复算单次准确率]
+    E --> F[柱高与标签使用单次准确率；无误差棒]
+    B --> G[十维特征固定种子 t-SNE]
+    B --> H[原始十维欧氏 SC；独立距离公式复核]
+    G --> I[SC标题与逐类别散点核对]
+    H --> I
+    F --> J[CSV/MAT 与 PNG/PDF/SVG/FIG]
     I --> J
-    J --> K[FLDE风格柱状图与2x2散点图 PNG/PDF/SVG/FIG]
 ```
 
-输出单独存入各目录 `results_flde_style/`；旧 `results_fd_comparison/` 不覆盖。原Higuchi脚本附带导出的旧混淆矩阵文件在运行前备份、结束后恢复。原音频、MAT/FIG/CSV/日志保留本地，图形PNG/PDF/SVG随代码归档。
-
-在根目录可执行：
+各目录 `results_flde_style/` 保存新结果；原 `results_fd_comparison/` 不覆盖，原Higuchi脚本附带导出的旧文件在运行前备份、运行结束恢复。音频、MAT/FIG/CSV/日志仅留本地，PNG/PDF/SVG随代码归档。
 
 ```matlab
-run_flde_comparison('v2', 'full');       % 新提特征、重复分类、降维、绘图
+run_flde_comparison('v2', 'full');       % 从音频重提特征并复核原脚本单次结果
 run_flde_comparison('v3_ds', 'full');
-run_flde_comparison('v2', 'results');    % 使用本入口的 features.mat 重做统计和降维
-run_flde_comparison('v2', 'plot');       % 仅使用 experiment.mat 重新排版
+run_flde_comparison('v2', 'results');    % 用本入口features.mat重新分类、降维和绘图
+run_flde_comparison('v2', 'plot');       % 只重绘；拒绝旧20次统计缓存
+verify_flde_outputs;                   % 核验图形实际数据、配文、预测、SC和输出
 ```
 
-### 本次实际运行结果
+### 本次单次结果核验
 
-MATLAB R2024b完成两个数据集全部八次原脚本特征提取与20次重复分类，四张图均导出PNG/PDF/SVG/FIG。完整日志见本地 `backup_flde_run.log` 与各输出目录 `run.log`；MAT保存原脚本内容、音频路径、特征、原预测、20组划分、全部预测、混淆矩阵、二维坐标及SC。下表为本次20次统计，不等同于前述历史单次结果。
+单次标准差为未定义（CSV/MAT使用NaN），下表SC在原始十维空间计算，独立于分类输入维数。
 
-| 数据集 | 方法 | 准确率均值 ± 样本标准差（%） | SC（原始十维） | 分类维数 |
+| 数据集 | 方法 | 单次识别率（%） | SC（原始十维） | 分类维数 |
 |---|---|---:|---:|---:|
-| National Park | Katz | 97.7062 ± 0.6073 | 0.222450 | 10 |
-| National Park | Higuchi | 97.4562 ± 0.3149 | 0.367099 | 10 |
-| National Park | FX | 82.8187 ± 0.8608 | 0.177343 | 10 |
-| National Park | R/S | 86.6312 ± 1.1496 | -0.010998 | 10 |
-| DeepShip | Katz | 97.8000 ± 0.6863 | 0.459957 | 1 |
-| DeepShip | Higuchi | 85.4375 ± 0.8954 | 0.468889 | 1 |
-| DeepShip | FX | 73.4625 ± 1.8975 | 0.306426 | 1 |
-| DeepShip | R/S | 92.2500 ± 0.8272 | 0.204115 | 10 |
+| National Park | Katz | 98.375 | 0.222450 | 10 |
+| National Park | Higuchi | 97.375 | 0.367099 | 10 |
+| National Park | FX | 81.500 | 0.177343 | 10 |
+| National Park | R/S | 84.500 | -0.010998 | 10 |
+| DeepShip | Katz | 98.000 | 0.459957 | 1 |
+| DeepShip | Higuchi | 84.250 | 0.468889 | 1 |
+| DeepShip | FX | 73.500 | 0.306426 | 1 |
+| DeepShip | R/S | 91.500 | 0.204115 | 10 |
 
-`verify_flde_outputs.m`用于核查共享分层划分、逐预测准确率、均值/标准差、原脚本第一轮预测、SC及全部输出文件，并在旧特征缓存存在时核对新提特征完全一致。实际执行核验全部通过：新提取的八组特征与旧缓存逐元素完全相同；20组划分、逐预测统计、第一轮原预测和SC重算均一致；16个图形文件存在；四个修改/新增MATLAB文件checkcode均0条信息。核验日志保存在本地 `backup_flde_verify.log`。四张PNG已逐张查看；FX原有polyfit点数警告与DeepShip原脚本缺失辅助路径警告保留，实际函数通过现有根目录路径解析。SC可为负数，本次National Park R/S为负值，如实显示。
+运行与核验日志：本地 `backup_flde_single_run.log` 与 `backup_flde_single_verify.log`。原有FX拟合点不足警告与DeepShip辅助路径警告保留。本次八个原脚本从音频重跑成功；八组特征与旧缓存完全一致；原预测、混淆矩阵、分类输入、柱高、标签、CSV、独立距离公式SC、逐类散点及标记、图例和16个导出文件全部通过核验。四张PNG已逐张查看。原回归检查已由失败（98.375≠97.70625）变为通过（98.375=98.375）。
 
 ## 11. 更新日志
 
 | 更新时间（UTC+08:00） | 操作类型 | 更新内容 | 影响文件 | 状态 |
 |---|---|---|---|---|
+| 2026-10-30 20:29 | fix / audit / figures | 修正统计口径：撤回20次均值替代原脚本单次结果的做法，两个数据集八根柱恢复rng42真实预测准确率，移除误差棒，三位小数并标明单次；全部八个原脚本从音频重新运行，重算SC与t-SNE，增强导出FIG实际数据/配文/图例校验，旧版本本地备份。 | `run_flde_comparison.m`、`verify_flde_outputs.m`、两个比较入口、`FLDE_FIGURE_AUDIT.md`、两目录 `results_flde_style/` 图形、`README.md` | 八个原始预测与混淆矩阵、柱高/配文/CSV、独立SC公式、散点/标记/图例及16个导出文件核验通过；四张PNG已查看；保留原有警告及无关修改 |
 | 2026-10-30 20:15 | feat / experiment / figures | 按FLDE原始EMF与Word图注建立样式审查；共享入口重提National Park/DeepShip四算法特征，保留原算法与KNN列，增加20次共享划分、真实标准差、十维SC及缓存重绘；生成四张PNG/PDF/SVG与本地FIG，保留旧输出。 | `run_flde_comparison.m`、两个 `compare_all_fd*.m`、`verify_flde_outputs.m`、`FLDE_FIGURE_AUDIT.md`、两目录 `results_flde_style/` 图形、`README.md` | MATLAB完整运行成功；数值核验全部通过，四个MATLAB文件checkcode 0信息，四张PNG人工核查通过；未恢复或提交用户原有删除及其他修改 |
 | 2026-10-30 19:47 | fix / experiment / docs | 将两个分类入口恢复为 Higuchi (1988) 传统公式：删除置信区间、离群值处理，修正 Nm 与 k² 归一化；两个对比入口统一 Higuchi 标签并直接调用新核心；保留粗粒化及既有 KNN 索引。实际重跑并生成准确率、t-SNE、混淆矩阵 PNG/PDF，备份旧文件与结果；v2 97.375%，v3_ds 84.25%。 | `v2/ci_hfd_no_sr.m`、`v3_ds/ds_higuchi.m`、两个 `compare_all_fd*.m`、两目录的 `results_fd_comparison/` 与 `results_traditional_higuchi/` 内图形、`README.md` | 联网核对原论文与官方源码；40 组公式参考、基本信号、单独/整合一致性、其他算法不变及图形核对均通过；原有 FX/路径警告保留 |
 | 2026-10-29 17:09 | experiment / docs | 按原脚本重跑并核对 v2/v3_ds 共八个分类入口，保存本地日志、预测与混淆矩阵、总体/逐类 CSV；复现 v3_ds CI-Higuchi 87.25%，记录三入口的第一列线性索引与整合版十维/十次重复的协议差异，保留 FX 警告。所有既有 MATLAB 源码及旧图表不变。 | `README.md`；本地运行证据目录 `results_original_script_audit_20261029_1704/`（不提交实验缓存） | 八个入口实际运行成功；预测与混淆矩阵准确率核算一致 |
