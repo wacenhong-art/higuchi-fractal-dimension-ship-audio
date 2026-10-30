@@ -223,7 +223,7 @@ DeepShip 会在实际存在的候选目录中寻找同时含有 `Cargo/27.wav`�
 
 ### 统计口径修正
 
-上一版为模仿FLDE误差棒，把原脚本单次准确率改成20次随机划分的均值：National Park Katz原始值98.375%，20次均值97.70625%。二者均可由真实预测计算，但不能互相替代。**当前所有柱高及柱顶数字均恢复为原脚本 `rng(42)` 的单次准确率**，显示三位小数，标题注明 `Single run (seed = 42)`；不绘制误差棒，不将单次标准差伪写为0。旧20次输出完整备份在本地 `backup/flde_before_single_run_20261030_202241/`，不得继续用旧均值配图表述原脚本结果。
+上一版为模仿FLDE误差棒，把原脚本单次准确率改成20次随机划分的均值：National Park Katz原始值98.375%，20次均值97.70625%。二者均可由真实预测计算，但不能互相替代。**当前所有柱高及柱顶数字均恢复为原脚本 `rng(42)` 的单次准确率**，显示三位小数，图内不添加参考FLDE中不存在的实验设置标题；随机种子仅在代码和文档中记录；不绘制误差棒，不将单次标准差伪写为0。旧20次输出完整备份在本地 `backup/flde_before_single_run_20261030_202241/`，不得继续用旧均值配图表述原脚本结果。
 
 保留四个原算法 Katz、传统Higuchi、FX、R/S、原音频、每类200个2048点片段、tau=1:10、每类100训练/100测试、无标准化欧氏1-NN。v2分类均十维；DeepShip Katz/Higuchi/FX保留原脚本第一列，R/S十列；t-SNE均用全部十列。这一维数差异保留并明确说明，不宣称同维度比较；片段级划分不等同独立录音泛化。
 
@@ -275,6 +275,7 @@ verify_flde_outputs;                   % 核验图形实际数据、配文、预
 
 | 更新时间（UTC+08:00） | 操作类型 | 更新内容 | 影响文件 | 状态 |
 |---|---|---|---|---|
+| 2026-10-30 20:45 | style / figures | 按参考图删除两张准确率柱状图顶部Single run/seed=42文字；仅使用已核验缓存重绘PNG/PDF/SVG/FIG，程序rng42与全部结果保留。 | `run_flde_comparison.m`、`FLDE_FIGURE_AUDIT.md`、两目录 `results_flde_style/` 图形、`README.md` | 导出与无标题检查见本地 `backup_flde_remove_title.log`；未重新训练或提取特征 |
 | 2026-10-30 20:29 | fix / audit / figures | 修正统计口径：撤回20次均值替代原脚本单次结果的做法，两个数据集八根柱恢复rng42真实预测准确率，移除误差棒，三位小数并标明单次；全部八个原脚本从音频重新运行，重算SC与t-SNE，增强导出FIG实际数据/配文/图例校验，旧版本本地备份。 | `run_flde_comparison.m`、`verify_flde_outputs.m`、两个比较入口、`FLDE_FIGURE_AUDIT.md`、两目录 `results_flde_style/` 图形、`README.md` | 八个原始预测与混淆矩阵、柱高/配文/CSV、独立SC公式、散点/标记/图例及16个导出文件核验通过；四张PNG已查看；保留原有警告及无关修改 |
 | 2026-10-30 20:15 | feat / experiment / figures | 按FLDE原始EMF与Word图注建立样式审查；共享入口重提National Park/DeepShip四算法特征，保留原算法与KNN列，增加20次共享划分、真实标准差、十维SC及缓存重绘；生成四张PNG/PDF/SVG与本地FIG，保留旧输出。 | `run_flde_comparison.m`、两个 `compare_all_fd*.m`、`verify_flde_outputs.m`、`FLDE_FIGURE_AUDIT.md`、两目录 `results_flde_style/` 图形、`README.md` | MATLAB完整运行成功；数值核验全部通过，四个MATLAB文件checkcode 0信息，四张PNG人工核查通过；未恢复或提交用户原有删除及其他修改 |
 | 2026-10-30 19:47 | fix / experiment / docs | 将两个分类入口恢复为 Higuchi (1988) 传统公式：删除置信区间、离群值处理，修正 Nm 与 k² 归一化；两个对比入口统一 Higuchi 标签并直接调用新核心；保留粗粒化及既有 KNN 索引。实际重跑并生成准确率、t-SNE、混淆矩阵 PNG/PDF，备份旧文件与结果；v2 97.375%，v3_ds 84.25%。 | `v2/ci_hfd_no_sr.m`、`v3_ds/ds_higuchi.m`、两个 `compare_all_fd*.m`、两目录的 `results_fd_comparison/` 与 `results_traditional_higuchi/` 内图形、`README.md` | 联网核对原论文与官方源码；40 组公式参考、基本信号、单独/整合一致性、其他算法不变及图形核对均通过；原有 FX/路径警告保留 |
