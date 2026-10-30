@@ -10,7 +10,14 @@ oldpath = path; cleanupPath = onCleanup(@() path(oldpath));
 addpath(fullfile(root,'对比算法'), fullfile(root,'v2'));
 cache = fullfile(out,'experiment.mat');
 if strcmp(mode,'plot')
-    s = load(cache); renderFigures(s,out); return;
+    s = load(cache);
+    [s.algorithm_names, s.config.algorithm_full_names] = methodNames();
+    s.result_table.Algorithm = string(s.algorithm_names(:));
+    save(cache,'-struct','s');
+    writetable(s.result_table,fullfile(out,'accuracy_results.csv'));
+    writetable(array2table(s.accuracy_all_runs,'RowNames',s.algorithm_names), ...
+        fullfile(out,'all_runs.csv'),'WriteRowNames',true);
+    renderFigures(s,out); return;
 end
 if strcmp(dataset_folder,'v2')
     scripts = {'ci_fd_katz_multiscale10.m','ci_hfd_no_sr.m','ci_fd_fx.m','ci_fd_rs_multiscale10.m'};
@@ -52,12 +59,13 @@ else
     assert(strcmp(mode,'results'),'Expected full, results or plot.');
     load(fullfile(out,'features.mat'),'feature_data','labels','knn_dimensions','source_results');
 end
-algorithm_names={'Katz','Higuchi','FX','R/S'};
+[algorithm_names, algorithm_full_names] = methodNames();
 config=struct('dataset',dataset,'num_repeats',20,'seeds',42:61, ...
     'classifier','1-NN Euclidean; original columns; no standardization', ...
     'tsne_seed',1042,'tsne_perplexity',30,'tsne_standardize',false, ...
     'silhouette_space','Raw 10-dimensional extracted features, Euclidean', ...
     'split','Segment-level: 100 train / 100 test per class; shared across methods');
+config.algorithm_full_names=algorithm_full_names;
 accuracy_all_runs=zeros(4,20); train_masks=false(numel(labels),20);
 predictions=cell(4,20); confusion_matrices=cell(4,20);
 for k=1:20
@@ -173,8 +181,16 @@ exportFigure(f,out,'tsne_comparison'); close(f);
 end
 
 function exportFigure(f,out,name)
-exportgraphics(f,fullfile(out,[name '.png']),'Resolution',300);
+png_temp=[tempname(out) '.png'];
+exportgraphics(f,png_temp,'Resolution',300);
+movefile(png_temp,fullfile(out,[name '.png']),'f');
 exportgraphics(f,fullfile(out,[name '.pdf']),'ContentType','vector');
 savefig(f,fullfile(out,[name '.fig']));
 print(f,fullfile(out,[name '.svg']),'-dsvg');
+end
+
+function [names, full_names] = methodNames()
+names={'KFD','HFD','BCD','R/S'};
+full_names={'Katz Fractal Dimension','Higuchi Fractal Dimension', ...
+    'Box-counting Dimension','Rescaled Range Analysis (D = 2 - H)'};
 end

@@ -76,3 +76,15 @@
 4. t-SNE visualization of ten-dimensional fractal features on the DeepShip dataset. SC is computed in the original ten-dimensional feature space using Euclidean distance.
 
 当前额外验收标准：图中八根柱的实际YData、两位小数±标签及CSV必须等于20次真实预测统计；上下误差必须等于样本标准差；不得添加总标题；第一轮必须等于原脚本单次预测；SC必须通过独立a(i)/b(i)距离公式复算；每一子图的逐类散点坐标必须等于保存的t-SNE坐标。National Park负SC保留。
+
+
+## 英文名称核对与当前简写
+
+| 旧显示 | 英文名称 | 当前显示 |
+|---|---|---|
+| Katz | Katz Fractal Dimension | KFD |
+| Higuchi | Higuchi Fractal Dimension | HFD |
+| FX | Box-counting Dimension | BCD |
+| R/S | Rescaled Range Analysis；本实现输出D=2-H | R/S |
+
+KFD/HFD依据原始研究 https://pmc.ncbi.nlm.nih.gov/articles/PMC7260313/ ；BCD依据 https://www.sciencedirect.com/science/article/abs/pii/S0378437101002552 ；R/S依据本算法引用论文 https://onlinelibrary.wiley.com/doi/10.1155/2011/724697 。FX为内部函数名，不能当作英文方法名；不自造RSFD等缩写。仅统一名称，数字、误差棒、配色、版式及实验协议不变。

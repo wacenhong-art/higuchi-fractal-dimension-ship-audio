@@ -219,7 +219,9 @@ DeepShip 会在实际存在的候选目录中寻找同时含有 `Cargo/27.wav`�
 
 ## FLDE 风格配图入口（当前：20次均值±标准差）
 
-`v2` 为 **National Park** 八类，`v3_ds` 为 **DeepShip** 四类。运行 `v2/compare_all_fd_v2.m` 或 `v3_ds/compare_all_fd_v3_ds.m`，均调用共享 `run_flde_comparison.m`。参考图的逐项样式、文字和数据清单见 [FLDE_FIGURE_AUDIT.md](FLDE_FIGURE_AUDIT.md)。原有单次整合入口及rng42结果属于单次统计；当前配图经用户确认采用本节20次统计。
+`v2` 为 **National Park** 八类，`v3_ds` 为 **DeepShip** 四类。运行 `v2/compare_all_fd_v2.m` 或 `v3_ds/compare_all_fd_v3_ds.m`，均调用共享 `run_flde_comparison.m`。参考图的逐项样式、文字和数据清单见 [FLDE_FIGURE_AUDIT.md](FLDE_FIGURE_AUDIT.md)。
+
+图中统一简写为 **KFD、HFD、BCD、R/S**，分别表示 Katz Fractal Dimension、Higuchi Fractal Dimension、Box-counting Dimension、Rescaled Range Analysis。`FX`只是仓库内计盒函数名，不是该算法英文名称；R/S实现先估计H，再以D=2-H输出分形维数，不把其输出误标成Hurst exponent。这里用测度/方法的基本缩写，不额外添加多尺度缩写，以免把DeepShip部分方法实际第一尺度分类混称十维分类。名称依据：[KFD/HFD原始研究](https://pmc.ncbi.nlm.nih.gov/articles/PMC7260313/)、[BCD原始研究](https://www.sciencedirect.com/science/article/abs/pii/S0378437101002552)、[R/S原始研究](https://onlinelibrary.wiley.com/doi/10.1155/2011/724697)。源文件名与算法公式不改；缓存、CSV、横轴、SC子图标题使用一致缩写。原有单次整合入口及rng42结果属于单次统计；当前配图经用户确认采用本节20次统计。
 
 保留原有 Katz、传统 Higuchi、FX、R/S 特征提取、音频源、每类200个2048点片段、tau=1:10及无标准化欧氏1-NN；不替换为论文中的熵算法或SVM。v2各算法分类10维；DeepShip前三种保留原脚本第一列、R/S十列，t-SNE均展示十列。因保留此历史差异，图中方法准确率不能视作同维度比较。用户明确选择为匹配FLDE的误差棒与±数字，使用20次均值±样本标准差。National Park Katz单次98.375%，当前图均值97.70625%与标准差0.60735%，不得混用。当前采用20次共享分层随机划分，种子42:61，每类100训练/100测试；误差棒为准确率的样本标准差，第一轮逐一核对原脚本预测。相邻片段共享录音来源，不代表独立录音泛化。
 
@@ -258,13 +260,13 @@ MATLAB R2024b完成两个数据集全部八次原脚本特征提取与20次重�
 
 | 数据集 | 方法 | 准确率均值 ± 样本标准差（%） | SC（原始十维） | 分类维数 |
 |---|---|---:|---:|---:|
-| National Park | Katz | 97.7062 ± 0.6073 | 0.222450 | 10 |
-| National Park | Higuchi | 97.4562 ± 0.3149 | 0.367099 | 10 |
-| National Park | FX | 82.8187 ± 0.8608 | 0.177343 | 10 |
+| National Park | KFD | 97.7062 ± 0.6073 | 0.222450 | 10 |
+| National Park | HFD | 97.4562 ± 0.3149 | 0.367099 | 10 |
+| National Park | BCD | 82.8187 ± 0.8608 | 0.177343 | 10 |
 | National Park | R/S | 86.6312 ± 1.1496 | -0.010998 | 10 |
-| DeepShip | Katz | 97.8000 ± 0.6863 | 0.459957 | 1 |
-| DeepShip | Higuchi | 85.4375 ± 0.8954 | 0.468889 | 1 |
-| DeepShip | FX | 73.4625 ± 1.8975 | 0.306426 | 1 |
+| DeepShip | KFD | 97.8000 ± 0.6863 | 0.459957 | 1 |
+| DeepShip | HFD | 85.4375 ± 0.8954 | 0.468889 | 1 |
+| DeepShip | BCD | 73.4625 ± 1.8975 | 0.306426 | 1 |
 | DeepShip | R/S | 92.2500 ± 0.8272 | 0.204115 | 10 |
 
 `verify_flde_outputs.m`核对20次共享划分及全部预测、混淆矩阵准确率、原脚本第一轮结果、均值和样本标准差；检查导出FIG中的柱高、上下误差、±文字、空总标题、SC标题、散点坐标、类别标记和图例。SC额外用完整距离矩阵的a(i)/b(i)公式独立复算。本次使用已核验的新提特征缓存重新执行20次分类和固定种子t-SNE，不重新提取特征。运行核验日志保留在本地 `backup_flde_repeat_restored.log`；单次版已备份在 `backup/flde_single_before_repeat_20261030_205030/`。原有FX与辅助路径警告对应特征提取记录，不隐藏、不改算法。
@@ -273,6 +275,7 @@ MATLAB R2024b完成两个数据集全部八次原脚本特征提取与20次重�
 
 | 更新时间（UTC+08:00） | 操作类型 | 更新内容 | 影响文件 | 状态 |
 |---|---|---|---|---|
+| 2026-10-30 21:03 | naming / figures | 联网核对原始研究并检查实际算法：横轴Katz/Higuchi/FX/R-S统一为KFD/HFD/BCD/R-S（图中保留R/S）；FX为内部计盒函数名。同步SC子图标题、缓存/CSV显示名称与英文全称，重导四图；PNG先写临时文件再替换，避免导出库直接打开目标失败。 | `run_flde_comparison.m`、两目录 `results_flde_style/` 图形、`FLDE_FIGURE_AUDIT.md`、`README.md` | 两组横轴简写及缓存数值不变断言通过；原有20次/误差棒/SC/散点核验全部通过；四个MATLAB文件checkcode 0条；两张柱图已查看 |
 | 2026-10-30 20:51 | fix / experiment / figures | 用户明确选择20次均值±标准差以完整匹配FLDE误差棒元素；从已核验特征重新执行两个数据集20次共享分类和t-SNE，恢复工字形误差棒及两位小数±配文，保持无总标题/seed文字；备份单次版，更新流程与统计口径。 | 共享实验/核验函数、两个比较入口、两目录 `results_flde_style/` 图形、`FLDE_FIGURE_AUDIT.md`、`README.md` | 20次预测、原第一轮、均值/样本SD、实际误差棒上下限、配文/空标题、独立SC与散点/图例全部通过；四个MATLAB文件checkcode 0条；两张柱图已查看 |
 | 2026-10-30 20:45 | style / figures | 按参考图删除两张准确率柱状图顶部Single run/seed=42文字；仅使用已核验缓存重绘PNG/PDF/SVG/FIG，程序rng42与全部结果保留。 | `run_flde_comparison.m`、`FLDE_FIGURE_AUDIT.md`、两目录 `results_flde_style/` 图形、`README.md` | 导出与无标题检查见本地 `backup_flde_remove_title.log`；未重新训练或提取特征 |
 | 2026-10-30 20:29 | fix / audit / figures | 修正统计口径：撤回20次均值替代原脚本单次结果的做法，两个数据集八根柱恢复rng42真实预测准确率，移除误差棒，三位小数并标明单次；全部八个原脚本从音频重新运行，重算SC与t-SNE，增强导出FIG实际数据/配文/图例校验，旧版本本地备份。 | `run_flde_comparison.m`、`verify_flde_outputs.m`、两个比较入口、`FLDE_FIGURE_AUDIT.md`、两目录 `results_flde_style/` 图形、`README.md` | 八个原始预测与混淆矩阵、柱高/配文/CSV、独立SC公式、散点/标记/图例及16个导出文件核验通过；四张PNG已查看；保留原有警告及无关修改 |
