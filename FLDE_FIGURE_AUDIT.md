@@ -88,3 +88,8 @@
 | R/S | Rescaled Range Analysis；本实现输出D=2-H | R/S |
 
 KFD/HFD依据原始研究 https://pmc.ncbi.nlm.nih.gov/articles/PMC7260313/ ；BCD依据 https://www.sciencedirect.com/science/article/abs/pii/S0378437101002552 ；R/S依据本算法引用论文 https://onlinelibrary.wiley.com/doi/10.1155/2011/724697 。FX为内部函数名，不能当作英文方法名；不自造RSFD等缩写。仅统一名称，数字、误差棒、配色、版式及实验协议不变。
+
+
+## 当前多尺度显示名称
+
+按用户要求，图内显示统一为 MS-KFD、MS-HFD、MS-BCD、MS-R/S。MS是Multiscale，表示每个样本在tau=1:10下进行均值粗粒化并提取对应测度；为本文清楚定义的组合缩写，不宣称某个机构规定的唯一缩写。原有基本测度缩写来源仍如前表。散点标题、柱状横轴和CSV同步使用这些名字。全部实验数值和样式不变；DeepShip前三个分类器只使用第一尺度的历史配置保持不变，不能因为图名添加MS就表述为全尺度分类。

@@ -190,7 +190,7 @@ print(f,fullfile(out,[name '.svg']),'-dsvg');
 end
 
 function [names, full_names] = methodNames()
-names={'KFD','HFD','BCD','R/S'};
-full_names={'Katz Fractal Dimension','Higuchi Fractal Dimension', ...
-    'Box-counting Dimension','Rescaled Range Analysis (D = 2 - H)'};
+names={'MS-KFD','MS-HFD','MS-BCD','MS-R/S'};
+full_names={'Multiscale Katz Fractal Dimension','Multiscale Higuchi Fractal Dimension', ...
+    'Multiscale Box-counting Dimension','Multiscale Rescaled Range Analysis (D = 2 - H)'};
 end
