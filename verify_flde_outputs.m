@@ -13,10 +13,10 @@ for d=1:2
     else
         fprintf('Legacy cache unavailable: legacy equality check skipped.\n');
     end
-    assert(s.config.num_repeats==1 && isequal(s.config.seeds,42));
-    assert(isequal(size(s.accuracy_all_runs),[4 1]));
+    assert(s.config.num_repeats==20 && isequal(s.config.seeds,42:61));
+    assert(isequal(size(s.accuracy_all_runs),[4 20]));
     assert(isequal(s.mean_accuracy,mean(s.accuracy_all_runs,2)));
-    assert(all(isnan(s.std_accuracy)), 'Single run has no between-run SD.');
+    assert(isequal(s.std_accuracy,std(s.accuracy_all_runs,0,2)));
     for k=1:s.config.num_repeats
         mask=s.train_masks(:,k);
         for c=1:numel(s.class_names)
@@ -35,8 +35,8 @@ for d=1:2
         x=s.feature_data{a}(:,1:s.knn_dimensions(a));
         assert(isequal(r.X_train,x(s.train_masks(:,1),:)));
         originalAccuracy=100*mean(r.Y_pred==r.Y_test);
-        assert(abs(s.mean_accuracy(a)-originalAccuracy)<1e-10, ...
-            'Plotted accuracy must equal original script, not a repeated-run mean.');
+        assert(abs(s.accuracy_all_runs(a,1)-originalAccuracy)<1e-10, ...
+            'First split must reproduce the original script.');
         cm=confusionmat(r.Y_test,r.Y_pred);
         assert(isequal(cm,s.confusion_matrices{a,1}));
         assert(abs(originalAccuracy-100*trace(cm)/sum(cm(:)))<1e-10);
@@ -54,11 +54,16 @@ for d=1:2
     fig=openfig(fullfile(out,'accuracy_comparison.fig'),'invisible');
     bars=findobj(fig,'Type','bar');
     assert(isscalar(bars) && isequal(bars.YData(:),s.mean_accuracy(:)));
-    assert(isempty(findobj(fig,'Type','errorbar')));
+    eb=findobj(fig,'Type','errorbar');
+    assert(isscalar(eb));
+    assert(isequal(eb.YData(:),s.mean_accuracy(:)));
+    assert(isequal(eb.YPositiveDelta(:),s.std_accuracy(:)));
+    assert(isequal(eb.YNegativeDelta(:),s.std_accuracy(:)));
+    ax=findobj(fig,'Type','axes'); assert(isempty(ax.Title.String));
     labels=findobj(fig,'Type','text');
     strings=string(get(labels,'String'));
     for a=1:4
-        assert(any(strings==sprintf('%.3f',s.mean_accuracy(a))));
+        assert(any(strings==sprintf('%.2f%s%.2f',s.mean_accuracy(a),char(177),s.std_accuracy(a))));
     end
     close(fig);
     fig=openfig(fullfile(out,'tsne_comparison.fig'),'invisible');
@@ -89,8 +94,8 @@ for d=1:2
     end
     close(fig);
     csv=readtable(fullfile(out,'accuracy_results.csv'));
-    assert(max(abs(csv.AccuracyPercent-s.mean_accuracy))<1e-10);
-    fprintf('%s: original predictions / confusion / bars / annotations / SC / scatter / exports PASS\n',s.config.dataset);
+    assert(max(abs(csv.MeanAccuracyPercent-s.mean_accuracy))<1e-10);
+    fprintf('%s: 20 splits / original first split / mean / SD / error bars / annotations / SC / scatter / exports PASS\n',s.config.dataset);
     disp(s.result_table);
 end
 files={'run_flde_comparison.m','verify_flde_outputs.m', ...

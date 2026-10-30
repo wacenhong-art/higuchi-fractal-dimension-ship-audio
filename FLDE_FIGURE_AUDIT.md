@@ -61,18 +61,18 @@
 - v2 = National Park，八类；v3_ds = DeepShip，四类。真实类别及顺序以原脚本音频路径为准，National Park不是参考论文中的四类子集。
 - 使用四个仍存在的算法 Katz/Higuchi/FX/R/S，固定顺序，不恢复用户已删除的Petrosian/Dubuc，不伪造八种熵算法。
 - 原始算法、音频、2048点、每类200段、均值粗粒化1:10保持不变。分类仍为原来的无标准化欧氏1-NN，未改为参考SVM。v2各方法10维；DeepShip Katz/Higuchi/FX保留第一列，R/S十列。
-- 当前采用原脚本单次rng(42)划分，每类100训练/100测试，所有柱高逐一复现原预测与混淆矩阵。单次无标准差，不画误差棒，数字三位小数，柱状图无总标题，不在图内添加seed等实验设置文字。此前20次均值图已归档；98.375%与97.70625%分别属于单次与20次均值，不能混用。片段级划分不等同独立录音测试。
+- 当前经用户明确确认，使用20次共享分层划分（seed42:61），每类100训练/100测试；柱高为20次均值，工字形误差棒为样本标准差，柱顶为两位小数“均值±标准差”。不添加总标题或seed文字。National Park Katz为97.71±0.61；98.375%仅为第一轮单次结果。片段级划分不等同独立录音测试。
 - t-SNE使用全部十维特征，无标准化，种子1042，perplexity30，不搜索更好看的种子，不按类别变换坐标。SC明确采用原始十维特征欧氏距离；标题SC不是二维嵌入质量分。
 - 四方法用2×2子图，延续参考的字体、无网格、独立坐标范围、标题及底部带框图例；八类增加四种颜色/符号，图例为两行四列。
 - 新结果单独存于各目录 `results_flde_style/`，不覆盖旧比较图。旧Higuchi脚本运行时的附带导出会临时备份并恢复原文件。
 - PNG 300 dpi；PDF/SVG矢量；FIG可编辑。真实结果自动填写，不沿用上表论文数值。
-- 两个原入口调用根目录共享 `run_flde_comparison`；full重提特征，results从features.mat重新单次分类/降维，plot仅从experiment.mat重新绘图并拒绝旧20次缓存。
+- 两个原入口调用根目录共享 `run_flde_comparison`；full重提特征，results从features.mat重新20次分类/降维，plot仅从experiment.mat重新绘图。
 
 ## 本项目可用英文图注
 
-1. Single-run 1-NN recognition rates (seed = 42; no between-run error bars) of four fractal-dimension methods on the National Park dataset.
+1. Average 1-NN recognition rates (mean ± sample standard deviation over 20 shared stratified splits) of four fractal-dimension methods on the National Park dataset.
 2. t-SNE visualization of ten-dimensional fractal features on the National Park dataset. SC is computed in the original ten-dimensional feature space using Euclidean distance.
-3. Single-run 1-NN recognition rates (seed = 42; no between-run error bars) of four fractal-dimension methods on the DeepShip dataset. Katz, Higuchi and FX retain the original first-scale classifier input; R/S uses ten scales.
+3. Average 1-NN recognition rates (mean ± sample standard deviation over 20 shared stratified splits) of four fractal-dimension methods on the DeepShip dataset. Katz, Higuchi and FX retain the original first-scale classifier input; R/S uses ten scales.
 4. t-SNE visualization of ten-dimensional fractal features on the DeepShip dataset. SC is computed in the original ten-dimensional feature space using Euclidean distance.
 
-当前额外验收标准：图中八根柱的实际YData、三位小数标签及CSV必须等于原脚本单次预测准确率；不得存在误差棒；SC必须通过独立a(i)/b(i)距离公式复算；每一子图的逐类散点坐标必须等于保存的t-SNE坐标。National Park负SC保留。
+当前额外验收标准：图中八根柱的实际YData、两位小数±标签及CSV必须等于20次真实预测统计；上下误差必须等于样本标准差；不得添加总标题；第一轮必须等于原脚本单次预测；SC必须通过独立a(i)/b(i)距离公式复算；每一子图的逐类散点坐标必须等于保存的t-SNE坐标。National Park负SC保留。

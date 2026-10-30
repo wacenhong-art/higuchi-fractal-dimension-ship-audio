@@ -1,5 +1,5 @@
 function run_flde_comparison(dataset_folder, mode)
-% FLDE-style figures; original algorithms, seed-42 split and classification columns retained.
+% FLDE-style figures; original algorithms and classification columns retained.
 % mode: full (fresh extraction), results (reclassify cache), plot (render only).
 if nargin < 2, mode = 'full'; end
 root = fileparts(mfilename('fullpath'));
@@ -10,9 +10,7 @@ oldpath = path; cleanupPath = onCleanup(@() path(oldpath));
 addpath(fullfile(root,'对比算法'), fullfile(root,'v2'));
 cache = fullfile(out,'experiment.mat');
 if strcmp(mode,'plot')
-    s = load(cache);
-    assert(s.config.num_repeats==1, 'Old repeated-run cache: run full or results first.');
-    renderFigures(s,out); return;
+    s = load(cache); renderFigures(s,out); return;
 end
 if strcmp(dataset_folder,'v2')
     scripts = {'ci_fd_katz_multiscale10.m','ci_hfd_no_sr.m','ci_fd_fx.m','ci_fd_rs_multiscale10.m'};
@@ -55,14 +53,14 @@ else
     load(fullfile(out,'features.mat'),'feature_data','labels','knn_dimensions','source_results');
 end
 algorithm_names={'Katz','Higuchi','FX','R/S'};
-config=struct('dataset',dataset,'num_repeats',1,'seeds',42, ...
+config=struct('dataset',dataset,'num_repeats',20,'seeds',42:61, ...
     'classifier','1-NN Euclidean; original columns; no standardization', ...
     'tsne_seed',1042,'tsne_perplexity',30,'tsne_standardize',false, ...
     'silhouette_space','Raw 10-dimensional extracted features, Euclidean', ...
     'split','Segment-level: 100 train / 100 test per class; shared across methods');
-accuracy_all_runs=zeros(4,1); train_masks=false(numel(labels),1);
-predictions=cell(4,1); confusion_matrices=cell(4,1);
-for k=1:config.num_repeats
+accuracy_all_runs=zeros(4,20); train_masks=false(numel(labels),20);
+predictions=cell(4,20); confusion_matrices=cell(4,20);
+for k=1:20
     rng(config.seeds(k),'twister'); mask=false(size(labels));
     for c=1:numel(class_names)
         ids=find(labels==c); assert(numel(ids)==200);
@@ -78,12 +76,12 @@ for k=1:config.num_repeats
         assert(abs(accuracy_all_runs(a,k)-100*trace(cm)/sum(cm(:)))<1e-10);
         if k==1
             assert(isequal(mask,source_results{a}.train_idx));
-            assert(isequal(x(mask,:),source_results{a}.X_train), 'Classifier input differs from original.');
+            assert(isequal(x(mask,:),source_results{a}.X_train));
             assert(isequal(pred,source_results{a}.Y_pred),'Seed 42 must reproduce original predictions.');
         end
     end
 end
-mean_accuracy=accuracy_all_runs(:,1); std_accuracy=nan(4,1); % Single run: SD is undefined.
+mean_accuracy=mean(accuracy_all_runs,2); std_accuracy=std(accuracy_all_runs,0,2);
 sc=zeros(4,1); tsne_coordinates=cell(1,4);
 for a=1:4
     % SC in raw feature space, not the potentially distorted t-SNE embedding.
@@ -95,8 +93,8 @@ for a=1:4
     assert(all(isfinite(tsne_coordinates{a}(:))));
 end
 result_table=table(string(algorithm_names(:)),mean_accuracy,std_accuracy,sc, ...
-    knn_dimensions(:),ones(4,1),'VariableNames', ...
-    {'Algorithm','AccuracyPercent','StdAccuracyPercent','SC_Raw10D','KNNDimensions','Repeats'});
+    knn_dimensions(:),repmat(20,4,1),'VariableNames', ...
+    {'Algorithm','MeanAccuracyPercent','StdAccuracyPercent','SC_Raw10D','KNNDimensions','Repeats'});
 writetable(result_table,fullfile(out,'accuracy_results.csv'));
 writetable(array2table(accuracy_all_runs,'RowNames',algorithm_names), ...
     fullfile(out,'all_runs.csv'),'WriteRowNames',true);
@@ -126,17 +124,18 @@ f=figure('Visible','off','Color','w','Units','centimeters','Position',[2 2 25 12
 ax=axes(f,'Position',[.085 .21 .90 .76]);
 bar(ax,1:4,s.mean_accuracy,.72,'FaceColor','flat','CData',palette, ...
     'EdgeColor',[.3 .3 .3],'LineWidth',.6); hold(ax,'on');
-% Single original split: no between-run error bars.
+errorbar(ax,1:4,s.mean_accuracy,s.std_accuracy,'k','LineStyle','none', ...
+    'LineWidth',1,'CapSize',7);
 set(ax,'FontName','Times New Roman','FontSize',16,'Box','on','TickDir','in', ...
     'XTick',1:4,'XTickLabel',s.algorithm_names,'XTickLabelRotation',30, ...
     'XGrid','on','YGrid','on','GridColor',[.8 .8 .8],'GridAlpha',.25,'Layer','bottom');
 % Match reference lower limit when possible, expand if a real result is lower.
-lower=min(70,5*floor(min(s.mean_accuracy)/5));
+lower=min(70,5*floor(min(s.mean_accuracy-s.std_accuracy)/5));
 ylim(ax,[lower 103]); xlim(ax,[.35 4.65]); yticks(ax,lower:5:100);
 ylabel(ax,'Recognition rate (%)');
 for a=1:4
-    text(ax,a,s.mean_accuracy(a)+.6, ...
-        sprintf('%.3f',s.mean_accuracy(a)), ...
+    text(ax,a,s.mean_accuracy(a)+s.std_accuracy(a)+.6, ...
+        sprintf('%.2f%s%.2f',s.mean_accuracy(a),char(177),s.std_accuracy(a)), ...
         'FontName','Times New Roman','FontSize',16, ...
         'HorizontalAlignment','center','VerticalAlignment','bottom');
 end
